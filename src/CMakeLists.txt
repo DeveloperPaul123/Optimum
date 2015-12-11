@@ -5,11 +5,11 @@
 
 cmake_minimum_required(VERSION 3.3)
 
-set(NEDLER_MEAN_VERSION_MAJOR "0")
-set(NEDLER_MEAN_VERSION_MINOR "1")
-set(NEDLER_MEAN_VERSION_PATCH "0")
+set(OPTIMUM_VERSION_MAJOR "0")
+set(OPTIMUM_VERSION_MINOR "1")
+set(OPTIMUM_VERSION_PATCH "0")
 
-project(NedlerMead)
+project(Optimum)
 
 set(HEADER_FILES optimizer.h)
 set(SOURCE_FILES main.cpp)
@@ -21,10 +21,10 @@ endif()
 
 include_directories(${EIGEN_DIR})
 
-add_executable(NedlerMead WIN32 ${HEADER_FILES} ${SOURCE_FILES})
+add_executable(Optimum WIN32 ${HEADER_FILES} ${SOURCE_FILES})
 
-set_source_files_properties(NedlerMead PROPERTIES LINER_LANGUAGE "CXX")
-set_target_properties(NedlerMead PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
+set_source_files_properties(Optimum PROPERTIES LINER_LANGUAGE "CXX")
+set_target_properties(Optimum PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
 #Add target to build documents from visual studio.
 set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)

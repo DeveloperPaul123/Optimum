@@ -57,34 +57,63 @@ using namespace std;
 */
 class Vector {
 public:
+
+	/**
+	* Default constructor. 
+	*/
     Vector() {
     }
+
+	/**
+	* Two dimensional vector. 
+	*/
     Vector(float c0, float c1) {
         coords.push_back(c0);
         coords.push_back(c1);
     }
+
+	/**
+	* Three dimensional vector. 
+	*/
     Vector(float c0, float c1, float c2) {
         coords.push_back(c0);
         coords.push_back(c1);
         coords.push_back(c2);
     }
 
-    // add more constructors when N gets > 3
+    // TODO: add more constructors when N gets > 3
 
     float& operator[](int i) {
         return coords[i];
     }
+
+	/**
+	* Get the value at a given position. 
+	* @param i the position to lookup. 
+	* @return float the value. 
+	*/
     float at(int i) const {
         return coords[i];
     }
+
+	/**
+	* Get the dimension of this vector. 
+	* @return int the dimension of the vector. 
+	*/
     int dimension() const {
         return coords.size();
     }
+
+	/**
+	* Prepare the vector with 0 values. 
+	* @param size the dimension of this vector. 
+	*/
     void prepare(int size) {
         for (int i=0; i<size; i++) {
             coords.push_back(0);
         }
     }
+
     Vector operator+(Vector other) {
         Vector result;
         result.prepare(dimension());
@@ -93,11 +122,13 @@ public:
         }
         return result;
     }
+
     void operator+=(Vector other) {
         for (int i=0; i<dimension(); i++) {
             coords[i] += other[i];
         }
     }
+
     Vector operator-(Vector other) {
         Vector result;
         result.prepare(dimension());
@@ -106,6 +137,7 @@ public:
         }
         return result;
     }
+
     bool operator==(Vector other) {
         if (dimension() != other.dimension()) {
             return false;
@@ -117,6 +149,7 @@ public:
         }
         return true;
     }
+
     Vector operator*(float factor) {
         Vector result;
         result.prepare(dimension());
@@ -125,6 +158,7 @@ public:
         }
         return result;
     }
+
     Vector operator/(float factor) {
         Vector result;
         result.prepare(dimension());
@@ -133,11 +167,13 @@ public:
         }
         return result;
     }
+
     void operator/=(float factor) {
         for (int i=0; i<dimension(); i++) {
             coords[i] /= factor;
         }
     }
+
     bool operator<(const Vector other) const {
         for (int i=0; i<dimension(); i++) {
             if (at(i) < other.at(i))
@@ -148,6 +184,9 @@ public:
         return false;
     }
 
+	/**
+	* Returns the length of this vector. 
+	*/
     float length() {
         float sum = 0;
         for (int i=0; i<dimension(); i++) {
@@ -156,10 +195,18 @@ public:
         return pow(sum, 0.5f);
     }
 
+	/**
+	* Set the value of a point in this vector. 
+	* @param value the new value. 
+	* @param position the position to set the point at. 
+	*/
 	void set(float value, int position) {
 		coords[position] = value;
 	}
 
+	/**
+	* Calculates the unit vector of this vector. 
+	*/
 	Vector unitVector() {
 		float len = length();
 		Vector unitVec;
@@ -181,7 +228,10 @@ private:
     vector<float> coords;
 };
 
-// This class stores known values for vectors. It throws unknown vectors.
+/**
+* This class stores known values for vectors. 
+* It throws unknown vectors.
+*/
 class ValueDB {
     public:
         ValueDB() {
@@ -302,12 +352,6 @@ public:
 		return true;
 	}
 
-	void insert(Vector vec) {
-		if (vectors.size() < dimension + 1) {
-			vectors.push_back(vec);
-		}
-	}
-
 	/**
 	* Step the algorithm by running through the Nelder-Mead optimization loop. 
 	* @param vec the vector to test. 
@@ -401,10 +445,7 @@ public:
 						for (int i = 1; i <= dimension; i++) {
 							vectors[i] = best + (vectors[i] - best)*sigma;
 						}
-					}
-					
-						
-					
+					}	
 				}
 
 				// algorithm is terminating, output: simplex' center of gravity
@@ -432,6 +473,22 @@ public:
 		}
 	}
 private:
+
+	/**
+	* Insert a vector into the algorithm. 
+	* @param vec the vector to insert. 
+	*/
+	void insert(Vector vec) {
+		if (vectors.size() < dimension + 1) {
+			vectors.push_back(vec);
+		}
+	}
+
+	/**
+	* Look up the score of the given vector. 
+	* @param vec the vector. 
+	* @return float the score of the vector. 
+	*/
 	float f(Vector vec) {
 		return db.lookup(vec);
 	}
