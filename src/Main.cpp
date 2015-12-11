@@ -1,8 +1,9 @@
-#include "optimizer.h"
+#include "neldermead.h"
 #include <Eigen/Dense>
 #include <iostream>
 #include <math.h>
 #include <algorithm>
+#include "geneticalgorithm.h"
 
 using namespace std;
 using namespace Eigen;
@@ -13,22 +14,35 @@ float camelHumps(Vector v);
 
 int main(int argc, const char* argv[]) {
 
+	float initialGuess[] = { 2.0f, 2.0f };
+	Chromosome<float> chrome(initialGuess, 2);
+
+	GeneticAlgorithm<float> ga;
+	ga.generatePopulation(chrome);
+	
+	//TODO:: implement actual algorithm. 
+
+	cout << "Press any key to continue" << endl;
+	cin.get();
+
 	//test data. 
 	float precision = 0.00001;
 	int dimension = 2;
 
 	NelderMeadMinimizer minimizer(dimension, precision);
 	//really bad start values. 
-	Vector v(-10, 30);
+	Vector v(5, 8);
 	minimizer.initialGuess(v);
+	Vector xs = minimizer.getExtraVector();
+	float xsScore = rosenbrock(xs);
+	minimizer.setExtraVectorScore(xsScore);
 	while (!minimizer.done()) {
 		float score = rosenbrock(v);
 		cout << "Score: " << score << endl;
 		v = minimizer.step(v, score);
 	}
 
-	cout << "X : " << v[0] << " Y: " << v[1] << endl;
-
+	cout << "X : " << v[0] << " Y: " << v[1] << " Iterations: " << minimizer.getIterations() << endl;
 	cout << "Press any key to exit...";
 	cin.get();
 	return 0;
@@ -105,7 +119,7 @@ void testTransform() {
 	int dimension = 3;
 
 	NelderMeadMinimizer minimizer(dimension, precision);
-	Vector v(0, 0, 0);
+	Vector v(1, 0.5, 0.5);
 	minimizer.initialGuess(v);
 	while (!minimizer.done()) {
 		float score = f(v, A, B);

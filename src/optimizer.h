@@ -81,6 +81,17 @@ public:
         coords.push_back(c2);
     }
 
+	/**
+	* Generic vector of length size.
+	* @param values an array of float values. 
+	* @param size the number of elements in the array. 
+	*/
+	Vector(float* values, int size) {
+		for (int i = 0; i < size; i++) {
+			coords.push_back(values[i]);
+		}
+	}
+
     // TODO: add more constructors when N gets > 3
 
     float& operator[](int i) {
