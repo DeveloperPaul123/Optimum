@@ -62,7 +62,15 @@ public:
 	void set(T value, int pos) {
 		mValues[pos] = value;
 	}
-
+	
+	/**
+	* [] Operator to make looking up values easy. 
+	* @param i the index to look up. 
+	* @return T the value at the given index. 
+	*/
+	T& operator[](int i) {
+		return mValues[i];
+	}
 	/**
 	* Read the value of the chromosome at a given point. 
 	* @param pos the position to read from.
@@ -146,7 +154,15 @@ public:
 	* @param other the other chromosome to cross over with. 
 	*/
 	Chromosome<T> midPointCrossOver(Chromosome<T> other) {
+		Chromosome<T> chrome;
+		chrome.prepare(other.size());
+		for (int i = 0; i < other.size(); i++) {
+			T value = this->at(i) + other.at(i);
+			T avg = value / 2;
+			chrome.set(avg, i);
+		}
 
+		return chrome;
 	}
 
 	/**
@@ -154,7 +170,13 @@ public:
 	* @param other the other chromosome to cross over with. 
 	*/
 	Chromosome<T> addCrossOver(Chromosome<T> other) {
+		Chromosome<T> chrome;
+		chrome.prepare(other.size());
+		for (int i = 0; i < other.size(); i++) {
+			chrome.set(this->at(i) + other.at(i), i);
+		}
 
+		return chrome;
 	}
 
 	/**
@@ -162,7 +184,12 @@ public:
 	* @param other the other chromosome. 
 	*/
 	Chromosome<T> subtractCrossOver(Chromosome<T> other) {
-
+		Chromosome<T> chrome;
+		chrome.prepare(other.size());
+		for (int i = 0; i < other.size(); i++) {
+			chrome.set(this->at(i) - other.at(i), i);
+		}
+		return chrome;
 	}
 	
 	/**
@@ -180,15 +207,45 @@ public:
 	*/
 	Chromosome<T> invertMutation() {
 		Chromosome<T> chrome = *this;
+		srand(static_cast <unsigned> (time(0)));
 		for (int i = 0; i < mutationSize; i++) {
-			int pos = getRandomInt(0, size() - 1);
-			T value = at(i);
-			T newValue = value*-1;
-			chrome.set(pow, newValue);
+			int pos = getRandomInt(0, size());
+			if (pos > size() - 1) {
+				pos -= 1;
+			}
+			T value = at(pos);
+			T newValue = (value*-1);
+			chrome.set(newValue, pos);
 		}
 		return chrome;
 	}
 
+	/**
+	* Creates a random mutation on this Chromosome and returns
+	* a newly mutated chromosome.
+	* @return Chromosome<T> the newly mutated chromosome. 
+	*/
+	Chromosome<T> randomMutation() {
+		Chromosome<T> chrome = *this;
+		srand(static_cast <unsigned> (time(0)));
+		for (int i = 0; i < size(); i++) {
+			T value = at(i);
+			T newValue = value * getRandomFloat(0.1f, 2.0f);
+			chrome.set(newValue, i);
+		}
+		return chrome;
+	}
+
+	/**
+	* Helper method that returns a random float between a given range. 
+	* @param LO the minimum number. 
+	* @param HI the maximum number. 
+	*/
+	float getRandomFloat(float LO, float HI) {
+		float r3 = LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
+		return r3;
+
+	}
 	/**
 	* Helper method that returns a random integer between a given range. 
 	* @param min the minimum number.
@@ -199,36 +256,102 @@ public:
 	}
 };
 
-
+/**
+* This class encapsualtes a population of chromosomes from which to mutate, select and do 
+* other operations to. 
+*/
 template <class T> class Population {
 
 	vector<Chromosome<T>> chromes;
-	int popSize, maxIter;
+	int popSize;
 	float eliteRate, mutRate;
 
 public:
-	Population(int popSize = 1000, int maxIterations = 100000, float eliteRate = 0.10, float mutationRate = 0.25f) {
+
+	/**
+	* Default constructor for a population. Holds many members (chromosomes). 
+	* @param popSize the size of the population, default is 1000. 
+	* @param eliteRate the elitist rate of the population, default is 10%. 
+	* @param mutationRate the mutation rate of the population, default is 40%. 
+	*/
+	Population(int popSize = 1000, float eliteRate = 0.10, float mutationRate = 0.40) {
 		srand(static_cast <unsigned> (time(0)));
 		this->popSize = popSize;
-		this->maxIter = maxIterations;
 		this->eliteRate = eliteRate;
 		this->mutRate = mutationRate;
 	}
 
+	/**
+	* Performs a bubble sort on the population. Sorts it in ascending order. 
+	*/
+	void bubbleSort() {
+		int i, j, flag = 1;    // set flag to 1 to start first pass
+		Chromosome<T> temp;             // holding variable
+		int numLength = chromes.size();
+		for (i = 1; (i <= numLength) && flag; i++)
+		{
+			flag = 0;
+			for (j = 0; j < (numLength - 1); j++)
+			{
+				if (chromes[j + 1].getFitness() < chromes[j].getFitness()) {
+					// swap elements
+					temp = chromes[j];
+					temp.setFitness(chromes[j].getFitness());
+					chromes[j] = chromes[j + 1];
+					chromes[j + 1] = temp;
+					// indicates that a swap occurred.
+					flag = 1;              
+				}
+			}
+		}
+	}
+
+	/**
+	* Adds a member to this population. 
+	* @param member the new member to add. 
+	*/
 	void addMember(Chromosome<T> member) {
 		chromes.push_back(member);
 	}
+
+	/**
+	* Returns a member of this population at a given position. 
+	* @param pos the position to look up. 
+	*/
 	Chromosome<T> getMember(int pos) {
 		return chromes[pos];
 	}
+
+	/**
+	* Set the values of this population equal to the members of another given population.
+	* Basically copies all the values from one population into this one. 
+	* @param other the population to copy. 
+	*/
+	void set(Population<T> other) {
+		chromes.clear();
+		for (int i = 0; i < other.size(); i++) {
+			chromes.push_back(other.getMember(i));
+		}
+	}
+
+	/**
+	* Replaces a member of this population with a new member. 
+	* @param pos the position of the new member.
+	* @param member the new member. 
+	*/
 	void setMember(int pos, Chromosome<T> member) {
-		chroms[pos] = member;
+		chromes[pos] = member;
 	}
 	
+	/**
+	* Performs elitism selection. Returns a population with the best members of this
+	* current population. Nothing is done to these "best" candidates. 
+	* @return Population<T> the "elite" population. 
+	*/
 	Population<T> elitism() {
 		int ne = eliteRate * popSize;
-		sortPopulation();
-		Population<T> pop(this->popSize, this->maxIter, this->eliteRate, this->mutRate);
+		bubbleSort();
+		Population<T> pop(this->popSize, this->eliteRate, this->mutRate);
 		for (int i = 0; i < ne; i++) {
 			pop.addMember(getMember(i));
 		}
@@ -236,45 +359,111 @@ public:
 		return pop;
 	}
 
+	/**
+	* Generates a crossover population from the current population. Does this by
+	* randomly choosing two members of the current population as parents and then
+	* mixing their values across two children. Puts the children in a new population. 
+	* The parents are not altered in any way. 
+	* @return Population<T> the new population with the bred children. 
+	*/
 	Population<T> generateCrossoverPopulation() {
 		int ne = eliteRate*popSize;
 		int nc = (popSize - ne) / 2;
+		bubbleSort();
+		Population<T> newPop(this->popSize, this->eliteRate, this->mutRate);
 
-		Population<T> newPop(this->popSize, this->maxIter, this->eliteRate, this->mutRate);
+		//TODO: Roulette Wheel Selection or Tournament Selection. 
 
-		for (int i = 0; i < nc) {
+		for (int i = 0; i < nc; i++) {
+
 			int pos1 = getRandomInt(0, chromes.size());
 			int pos2 = getRandomInt(0, chromes.size());
-			while (pos1 == pos2) {
-				int pos1 = getRandomInt(0, chromes.size());
-				int pos2 = getRandomInt(0, chromes.size());
+			if (pos1 == pos2) {
+				pos2 = getRandomInt(0, chromes.size());
+			}
+			
+			int pos3 = getRandomInt(0, chromes.size());
+			int pos4 = getRandomInt(0, chromes.size());
+			if (pos4 == pos3) {
+				pos4 = getRandomInt(0, chromes.size());
 			}
 
 			Chromosome<T> first = chromes[pos1];
 			Chromosome<T> second = chromes[pos2];
-			Chromosome<T> crossOne = first.singlePointCrossOver(second);
-			Chromosome<T> crossTwo = second.singlePointCrossOver(first);
+			Chromosome<T> third = chromes[pos3];
+			Chromosome<T> fourth = chromes[pos4];
+			Chromosome<T> crossOne;
+			Chromosome<T> crossTwo;
+			Chromosome<T> crossThree;
+			Chromosome<T> crossFour;
+
+			crossOne.prepare(first.size());
+			crossTwo.prepare(second.size());
+			crossThree.prepare(third.size());
+			crossFour.prepare(fourth.size());
+
+			for (int j = 0; j < first.size(); j++) {
+				float beta = getRandomFloat(0.0f, 1.0f);
+				T value = beta* first.at(j) + (1 - beta)*second.at(j);
+				T valueTwo = beta*third.at(j) + (1 - beta)*fourth.at(j);
+				crossOne.set(value, j);
+				crossThree.set(valueTwo, j);
+			}
+
+			
+			for (int n = 0; n < first.size(); n++) {
+				float beta = getRandomFloat(0.0f, 1.0f);
+				T value = beta* first.at(n) + (1 - beta)*second.at(n);
+				T valueTwo = beta*third.at(n) + (1 - beta)*fourth.at(n);
+				crossTwo.set(value, n);
+				crossFour.set(value, n);
+			}
+	
 			newPop.addMember(crossOne);
 			newPop.addMember(crossTwo);
 		}
+
+		return newPop;
 	}
 
-	void addPopulation(Population<T> pop) {
-		for (int i = 0; i < pop.size(); i++) {
-			this->chromes.push_back(pop.getMember(i));
+	/**
+	* Adds a given population to this population. 
+	* @param pop the population to add. 
+	* @return Population<T> the new population with the members from this
+	*		population and the other population (i.e. pop).
+	*/
+	Population<T> addPopulation(Population<T> pop) {
+		Population<T> newPop;
+		for (int i = 0; i < size(); i++) {
+			newPop.addMember(getMember(i));
 		}
+		for (int i = 0; i < pop.size(); i++) {
+			newPop.addMember(pop.getMember(i));
+		}
+
+		return newPop;
 	}
 
-	void sortPopulation() {
-		sort(chromes.begin(), chromes.end(), chromSort);
-	}
-
+	/**
+	* Returns the size of this population. 
+	* @return int the size. 
+	*/
 	int size() {
-		return popSize;
+		return chromes.size();
 	}
+	
 private:
-	bool chromSort(Chromosome<T> chrom1, Chromosome<T> chrom2) {
-		return (chrom1.getFitness() < chrom2.getFitness());
+
+	/**
+	* Helper method that returns a random float between a given range. 
+	* @param LO the minimum. 
+	* @param HI the maximum. 
+	* @return a random number between LO and HI. 
+	*/
+	float getRandomFloat(float LO, float HI) {
+		float r3 = LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
+		return r3;
+
 	}
 
 	/**
@@ -287,34 +476,76 @@ private:
 	}
 };
 
+/**
+* Genetic Algorithm Class. Holds the logic for stepping through generations and 
+* handling the new populations. 
+*/
 template <class T> class GeneticAlgorithm {
 	int popSize;
 	int maxIter;
 	float elite;
 	float mutation;
+	int iter;
 	Population<T> pop;
+
 public:
-	GeneticAlgorithm(int popSize = 1000, int maxIter = 10000, float elite = 0.10f, float mutation = 0.25f) {
+
+	/**
+	* Constructor. Initializes various values. 
+	* @param popSize the population size, the default is 200. 
+	* @param maxIter the maximum number of generations to create. The default is 10,000.
+	* @param elite the elitest rate, default it 10%. 
+	* @param mutation rate, the default is 25%. 
+	*/
+	GeneticAlgorithm(int popSize = 200, int maxIter = 10000, float elite = 0.10f, float mutation = 0.25f) {
 		srand(static_cast <unsigned> (time(0)));
 		this->popSize = popSize;
 		this->maxIter = maxIter;
 		this->elite = elite;
 		this->mutation = mutation;
+		this->iter = 0;
+		pop = Population<T>(popSize, elite, mutation);
 	}
 
-	void generatePopulation(Chromosome<float> initialGuess) {
+	/**
+	* Checks to see if the algorithm is done. Currently only looks if 
+	* the number of iterations has passed or is equal to the max number
+	* of iterations. 
+	* @return bool true if done, false otherwise. 
+	*/
+	bool done() {
+		if (iter >= maxIter) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	/**
+	* Generates a random population given an "initial guess".
+	* @param initialGuess the initial guess. 
+	* @return Population<float> a population of size popSize. 
+	*/
+	Population<float> generatePopulation(Chromosome<float> initialGuess) {
 		for (int i = 0; i < popSize; i++) {
 			Chromosome<float> chrome;
 			chrome.prepare(initialGuess.size());
 			for (int i = 0; i < initialGuess.size(); i++) {
-				float val = getRandomFloat(initialGuess.at(i) - 500.0f, initialGuess.at(i) + 500.0f);
+				float val = getRandomFloat(initialGuess.at(i) - 20.0f, initialGuess.at(i) + 20.0f);
 				chrome.set(val, i);
 			}
 			pop.addMember(chrome);
 		}
+		return pop;
 	}
 
-	void generatePopulation(Chromosome<int> initialGuess) {
+	/**
+	* Generates an random population given an initial integer guess. 
+	* @param initial guess. 
+	* @return Population<int> a newly generated population of size popSize. 
+	*/
+	Population<int> generatePopulation(Chromosome<int> initialGuess) {
 	
 		for (int i = 0; i < popSize; i++) {
 			Chromosome<int> chrome;
@@ -325,8 +556,17 @@ public:
 			}
 			pop.addMember(chrome);
 		}
+
+		return pop;
 	}
 
+	/**
+	* Take a step with the population and generate a new generation. 
+	* Goes through the steps of elitism, crossing over, mutation and updating the current
+	* population. 
+	* @param pop the current population. 
+	* @return the new population. 
+	*/
 	Population<T> step(Population<T> pop) {
 		//elitism. 
 		Population<T> pop1 = pop.elitism();
@@ -344,13 +584,22 @@ public:
 		}
 
 		//update.
-		this->pop = pop1.addPopulation(pop2);
-		return this->pop;
+		pop.set(pop1.addPopulation(pop2));
+		pop.bubbleSort();
+
+		iter += 1;
+		
+		return pop;
 	}
 
+	/**
+	* Helper method that generates a random float in a given range. 
+	* @param LO the minimum number. 
+	* @param HI the maximum number. 
+	*/
 	float getRandomFloat(float LO, float HI) {
 		float r3 = LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
-		return r3. 
+		return r3;
 	}
 
 	/**
@@ -362,6 +611,4 @@ public:
 		return rand() % max + min;
 	}
 };
-
-
 #endif GENETICALGORITHM_H

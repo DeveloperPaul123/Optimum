@@ -13,16 +13,16 @@ NelderMeadMinimizer::NelderMeadMinimizer(int dimension, float termination_distan
 	srand(time(NULL));
 	//adaptive params.
 	if (dimension > 0) {
-		alpha = 1.0;
-		gamma = 1.0 + (2.0 / dimension);
-		rho = 0.75 - (1.0 / (2.0 * dimension));
-		sigma = 1.0 - (1.0 / dimension);
+		alpha = 1.0f;
+		gamma = 1.0f + (2.0f / dimension);
+		rho = 0.75f - (1.0f / (2.0f * dimension));
+		sigma = 1.0f - (1.0f / dimension);
 	}
 	else {
-		alpha = 1;
-		gamma = 2;
-		rho = 0.5;
-		sigma = 0.5;
+		alpha = 1.0f;
+		gamma = 2.0f;
+		rho = 0.5f;
+		sigma = 0.5f;
 	}
 	this->maxIter = maxIterations;
 	this->iterations = 0;
@@ -46,10 +46,10 @@ void NelderMeadMinimizer::initialGuess(Vector v) {
 		for (int i = 0; i < dimension; i++) {
 			float tau = 0;
 			if (v[i] == 0) {
-				tau = 0.00025;
+				tau = 0.00025f;
 			}
 			else {
-				tau = 0.05;
+				tau = 0.05f;
 			}
 			Vector unitVec = v.unitVector();
 			float val = v[i] + unitVec[i] * tau;
@@ -140,8 +140,12 @@ Vector NelderMeadMinimizer::step(Vector vec, float score) {
 				Vector best = vectors[0];
 				Vector second_worst = vectors[1];
 
+			/*	for (int j = 0; j < dimension; j++) {
+					xs.set(vectors[j].at(j), j);
+				}*/
+
 				//Testing out gradient method. 		
-			/*	float funcDiff = f(best) - f(xs);
+		/*		float funcDiff = f(best) - f(xs);
 				float pointDiff = second_worst[0] - best[0];
 				float gX = funcDiff / pointDiff;
 
@@ -154,7 +158,9 @@ Vector NelderMeadMinimizer::step(Vector vec, float score) {
 
 				// reflect through the COG. 
 				Vector reflected = cog + (cog - worst)*alpha;
-				//Vector reflected = best - (gradient)*1.0;
+				
+				//quasi graidient method. 
+				//Vector reflected = best - (gradient)*sigma;
 
 				//if the reflected point is better (lower score) than the second worst but
 				//has a higher score than the best...replace the worst point with the reflected point. 

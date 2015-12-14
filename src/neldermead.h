@@ -69,6 +69,13 @@ public:
 	}
 
 	/**
+	* One dimensional vector. 
+	*/
+	Vector(float c0) {
+		coords.push_back(c0);
+	}
+
+	/**
 	* Two dimensional vector.
 	*/
 	Vector(float c0, float c1) {
@@ -85,8 +92,22 @@ public:
 		coords.push_back(c2);
 	}
 
-	// TODO: add more constructors when N gets > 3
+	/**
+	* Multidimensional vector constructor, for any size. 
+	* @param *values array of float values.
+	* @param size the length of the array of values. 
+	*/
+	Vector(float *values, int size) {
+		for (int i = 0; i < size; i++) {
+			coords.push_back(values[i]);
+		}
+	}
 
+	/**
+	* [] Operator to make value access easy. 
+	* @param i the index position to look up. 
+	* @return float the value at the index position. 
+	*/
 	float& operator[](int i) {
 		return coords[i];
 	}
