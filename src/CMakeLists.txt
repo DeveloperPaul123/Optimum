@@ -11,7 +11,7 @@ set(OPTIMUM_VERSION_PATCH "0")
 
 project(Optimum)
 
-set(HEADER_FILES optimizer.h neldermead.h geneticalgorithm.h)
+set(HEADER_FILES neldermead.h geneticalgorithm.h utils.h)
 set(SOURCE_FILES main.cpp)
 
 set(EIGEN_DIR CACHE PATH "Eigen library directory.")

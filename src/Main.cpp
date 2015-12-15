@@ -4,6 +4,7 @@
 #include <math.h>
 #include <algorithm>
 #include "geneticalgorithm.h"
+#include "utils.h"
 
 using namespace std;
 using namespace Eigen;
@@ -23,18 +24,45 @@ float gaBoothsFunctionTest(Chromosome<float> c);
 
 int main(int argc, const char* argv[]) {
 
+	cout << "Testing csv loading..." << endl;
+	cout << "Enter the file path: ";
+	char filepath[256];
+	cin.getline(filepath, 256);
+
+	std::string fp = std::string(filepath);
+	MatrixXd data = loadCsv(fp, ',');
+
+	cout << data << endl;
+	cout << "Press any key to continue." << endl;
+	cin.get();
+
+	cout << "Testing csv write function..." << endl;
+	cout << "Enter the target file path and name: ";
+	char outpath[256];
+	cin.getline(outpath, 256);
+
+	writeCsv(outpath, ',', data);
+
+	cout << "Press any key to continue..." << endl;
+	cin.get();
 	testNM1D();
 
 	cout << "Press any key to conitue to GA 1D test..." << endl;
 	cin.get();
+
 	testGA1D();
+
+	cout << "Press any key to continue to a transform test..." << endl;
+	cin.get();
+
+	testTransform();
 
 	cout << "Press any key to continue to a GA Transform test..." << endl;
 	cin.get();
 
 	testGATransform();
 
-	cout << "Press any key to continue" << endl;
+	cout << "Press any key to continue to Rosenbrock test..." << endl;
 	cin.get();
 
 	//test data. 
@@ -43,7 +71,7 @@ int main(int argc, const char* argv[]) {
 
 	NelderMeadMinimizer minimizer(dimension, precision);
 	//really bad start values. 
-	Vector v(5, -8);
+	Vector v(5, 8);
 	minimizer.initialGuess(v);
 	while (!minimizer.done()) {
 		float score = rosenbrock(v);
@@ -52,8 +80,15 @@ int main(int argc, const char* argv[]) {
 	}
 
 	cout << "X : " << v[0] << " Y: " << v[1] << " Iterations: " << minimizer.getIterations() << endl;
+
+	cout << "Press any key to continue to the GA Booth's Function Test..." << endl;
+	cin.get();
+
+	testGA2D();
+
 	cout << "Press any key to exit...";
 	cin.get();
+
 	return 0;
 
 }
@@ -79,114 +114,20 @@ void testGA2D() {
 			member.setFitness(gaBoothsFunctionTest(member));
 			mPop.setMember(i, member);
 		}
-		cout << "Fitness: " << mPop.getMember(0).getFitness() << " " << mPop.getMember(0).at(0)  << " " << mPop.getMember(0).at(1) << endl;
+		mPop.bubbleSort();
 		if (mPop.getMember(0).getFitness() < best.getFitness()) {
 			best = mPop.getMember(0);
+			cout << "Fitness: " << best.getFitness() << " Value: " << best.at(0) << " " << best.at(1) << endl;
 		}
 	}
 	cout << "Best: " << best.at(0) << " " << best.at(1) << " Score: " << best.getFitness() << endl;
-}
-
-void testGATransform() {
-	//going to try to map coordinates from one system to the coordinate system of another
-	//using the NedlerMead as a minimizing function. 
-	double arrA[21][3] = {
-		{ -16.6728, 25.9217, 1.9945 },
-		{ -1.60935, 26.4446, 1.9945 },
-		{ 13.4151, 26.8788, 1.9945 },
-		{ -31.0609, 10.4577, 1.9945 },
-		{ -16.3166, 11.0408, 1.9945 },
-		{ -1.08825, 11.4183, 1.9945 },
-		{ 13.8795, 12.1184, 1.9945 },
-		{ 28.7055, 12.581, 1.9945 },
-		{ -30.5346, -4.51181, 1.9945 },
-		{ -15.6519, -4.0138, 1.9945 },
-		{ -0.625645, -3.46434, 1.9945 },
-		{ 14.4307, -3.0567, 1.9945 },
-		{ 29.2584, -2.50372, 1.9945 },
-		{ -30.1269, -19.6267, 1.9945 },
-		{ -15.2443, -19.0152, 1.9945 },
-		{ -0.101031, -18.4339, 1.9945 },
-		{ 14.8118, -17.9695, 1.9945 },
-		{ 29.8079, -17.53, 1.9945 },
-		{ -14.6948, -33.8961, 1.9945 },
-		{ 0.421824, -33.4318, 1.9945 },
-		{ 15.3027, -32.9089, 1.9945 }
-	};
-
-	double arrB[21][3] = {
-		{ 848.555, 745.678, 0 },
-		{ 1006.32, 744.568, 0 },
-		{ 1160.63, 744.322, 0 },
-		{ 696.538, 903.447, 0 },
-		{ 850.82, 901.093, 0 },
-		{ 1007.46, 897.763, 0 },
-		{ 1164.11, 897.875, 0 },
-		{ 1317.44, 895.364, 0 },
-		{ 699.913, 1060.06, 0 },
-		{ 853.107, 1057.8, 0 },
-		{ 1009.74, 1054.31, 0 },
-		{ 1166.4, 1052.07, 0 },
-		{ 1318.55, 1050.84, 0 },
-		{ 703.31, 1215.68, 0 },
-		{ 856.594, 1212.19, 0 },
-		{ 1013.23, 1209.88, 0 },
-		{ 1168.82, 1207.62, 0 },
-		{ 1320.82, 1203.09, 0 },
-		{ 859.857, 1366.56, 0 },
-		{ 1014.5, 1363.19, 0 },
-		{ 1168.67, 1361.94, 0 }
-	};
-
-	MatrixXd A(21, 2);
-	MatrixXd B(21, 2);
-
-	for (int r = 0; r < 21; r++) {
-		A(r, 0) = arrA[r][0];
-		A(r, 1) = arrA[r][1];
-		double x = arrB[r][0];
-		double y = arrB[r][1];
-
-		double correctedX = (x - (0.5 * 2048))*0.099;
-		double correctedY = ((0.5 * 2048) - y) * 0.099;
-		B(r, 0) = correctedX;
-		B(r, 1) = correctedY;
-	}
-
-	float guess[] = { 1.0f, 1.0f, 1.0f };
-	Chromosome<float> chrome(guess, 3);
-	
-	GeneticAlgorithm<float> ga(500, 1000, 0.09, 0.30f);
-	Population<float> pop = ga.generatePopulation(chrome);
-
-	for (int i = 0; i < pop.size(); i++) {
-		Chromosome<float> member = pop.getMember(i);
-		member.setFitness(f(member, A, B));
-		pop.setMember(i, member);
-	}
-
-	Chromosome<float> best = pop.getMember(0);
-	while (!ga.done()) {
-		pop.set(ga.step(pop));
-		for (int i = 0; i < pop.size(); i++) {
-			Chromosome<float> member = pop.getMember(i);
-			member.setFitness(f(member, A, B));
-			pop.setMember(i, member);
-		}
-		pop.bubbleSort();
-		cout << "Fitness: " << pop.getMember(0).getFitness() << " " << pop.getMember(0).at(0)  << " " << pop.getMember(0).at(1) << " " << pop.getMember(0).at(2) << endl;
-		if (pop.getMember(0).getFitness() < best.getFitness()) {
-			best = pop.getMember(0);
-		}
-	}
-	cout << "Best: " << best.at(0) << " " << best.at(1) << " " << best.at(2) << " Score: " << best.getFitness() << endl;
 }
 
 void testGA1D() {
 	float initialGuess[] = { 3.0f };
 	Chromosome<float> chrome(initialGuess, 1);
 
-	GeneticAlgorithm<float> ga(150, 1000, 0.1f, 0.40f);
+	GeneticAlgorithm<float> ga(150, 300, 0.1f, 0.40f);
 	Population<float> mPop = ga.generatePopulation(chrome);
 	for (int i = 0; i < mPop.size(); i++) {
 		Chromosome<float> member = mPop.getMember(i);
@@ -204,9 +145,9 @@ void testGA1D() {
 			mPop.setMember(i, member);
 		}
 		mPop.bubbleSort();
-		cout << "Fitness: " << mPop.getMember(0).getFitness() << " " << mPop.getMember(0).at(0) << endl;
 		if (mPop.getMember(0).getFitness() < best.getFitness()) {
 			best = mPop.getMember(0);
+			cout << "Fitness: " << mPop.getMember(0).getFitness() << " Value: " << mPop.getMember(0).at(0) << endl;
 		}
 	}
 	mPop.bubbleSort();
@@ -228,7 +169,7 @@ void testNM1D() {
 		cout << "Score: " << score << endl;
 		v = minimizer.step(v, score);
 	}
-	cout << "Best: " << v.at(0) << " Error: " << abs(v.at(0) - 3.0f) / 3.0f << endl;
+	cout << "Best: " << v.at(0) << " Error: " << abs(v.at(0) - 3.0f) / 3.0f << " Iterations: " << minimizer.getIterations() << endl;
 }
 
 void testTransform() {
@@ -315,6 +256,105 @@ void testTransform() {
 
 }
 
+void testGATransform() {
+	//going to try to map coordinates from one system to the coordinate system of another
+	//using the NedlerMead as a minimizing function. 
+	double arrA[21][3] = {
+		{ -16.6728, 25.9217, 1.9945 },
+		{ -1.60935, 26.4446, 1.9945 },
+		{ 13.4151, 26.8788, 1.9945 },
+		{ -31.0609, 10.4577, 1.9945 },
+		{ -16.3166, 11.0408, 1.9945 },
+		{ -1.08825, 11.4183, 1.9945 },
+		{ 13.8795, 12.1184, 1.9945 },
+		{ 28.7055, 12.581, 1.9945 },
+		{ -30.5346, -4.51181, 1.9945 },
+		{ -15.6519, -4.0138, 1.9945 },
+		{ -0.625645, -3.46434, 1.9945 },
+		{ 14.4307, -3.0567, 1.9945 },
+		{ 29.2584, -2.50372, 1.9945 },
+		{ -30.1269, -19.6267, 1.9945 },
+		{ -15.2443, -19.0152, 1.9945 },
+		{ -0.101031, -18.4339, 1.9945 },
+		{ 14.8118, -17.9695, 1.9945 },
+		{ 29.8079, -17.53, 1.9945 },
+		{ -14.6948, -33.8961, 1.9945 },
+		{ 0.421824, -33.4318, 1.9945 },
+		{ 15.3027, -32.9089, 1.9945 }
+	};
+
+	double arrB[21][3] = {
+		{ 848.555, 745.678, 0 },
+		{ 1006.32, 744.568, 0 },
+		{ 1160.63, 744.322, 0 },
+		{ 696.538, 903.447, 0 },
+		{ 850.82, 901.093, 0 },
+		{ 1007.46, 897.763, 0 },
+		{ 1164.11, 897.875, 0 },
+		{ 1317.44, 895.364, 0 },
+		{ 699.913, 1060.06, 0 },
+		{ 853.107, 1057.8, 0 },
+		{ 1009.74, 1054.31, 0 },
+		{ 1166.4, 1052.07, 0 },
+		{ 1318.55, 1050.84, 0 },
+		{ 703.31, 1215.68, 0 },
+		{ 856.594, 1212.19, 0 },
+		{ 1013.23, 1209.88, 0 },
+		{ 1168.82, 1207.62, 0 },
+		{ 1320.82, 1203.09, 0 },
+		{ 859.857, 1366.56, 0 },
+		{ 1014.5, 1363.19, 0 },
+		{ 1168.67, 1361.94, 0 }
+	};
+
+	MatrixXd A(21, 2);
+	MatrixXd B(21, 2);
+
+	for (int r = 0; r < 21; r++) {
+		A(r, 0) = arrA[r][0];
+		A(r, 1) = arrA[r][1];
+		double x = arrB[r][0];
+		double y = arrB[r][1];
+
+		double correctedX = (x - (0.5 * 2048))*0.099;
+		double correctedY = ((0.5 * 2048) - y) * 0.099;
+		B(r, 0) = correctedX;
+		B(r, 1) = correctedY;
+	}
+
+	float guess[] = { 1.0f, 1.0f, 1.0f };
+	Chromosome<float> chrome(guess, 3);
+
+	GeneticAlgorithm<float> ga(500, 1000, 0.09, 0.30f);
+	Population<float> pop = ga.generatePopulation(chrome);
+
+	for (int i = 0; i < pop.size(); i++) {
+		Chromosome<float> member = pop.getMember(i);
+		member.setFitness(f(member, A, B));
+		pop.setMember(i, member);
+	}
+
+	Chromosome<float> best = pop.getMember(0);
+	while (!ga.done()) {
+		pop.set(ga.step(pop));
+		for (int i = 0; i < pop.size(); i++) {
+			Chromosome<float> member = pop.getMember(i);
+			member.setFitness(f(member, A, B));
+			pop.setMember(i, member);
+		}
+		pop.bubbleSort();
+		
+		if (pop.getMember(0).getFitness() < best.getFitness()) {
+			best = pop.getMember(0);
+			cout << "Fitness: " << best.getFitness() << " " << best.at(0) << " " << best.at(1) << " " << best.at(2) << endl;
+		}
+	}
+	cout << "Best: " << best.at(0) << " " << best.at(1) << " " << best.at(2) << " Score: " << best.getFitness() << endl;
+}
+
+/**
+* 2D translation and rotation of one set of coordinates to another set of coordinates.
+*/
 float f(Vector &vec, MatrixXd &cbct, MatrixXd &bli) {
 	Vector temp = Vector(vec);
 	float shift_x = vec[0];
@@ -330,7 +370,7 @@ float f(Vector &vec, MatrixXd &cbct, MatrixXd &bli) {
 	sin((deg*degreeToRad)), cos((deg*degreeToRad));
 	
 
-	MatrixXd trans = (bli + shift)*trans_rot;
+	MatrixXd trans = (bli * trans_rot) + shift;
 	//MatrixXd trans = (bli + shift);
 
 	MatrixXd res = trans - cbct;
@@ -338,6 +378,9 @@ float f(Vector &vec, MatrixXd &cbct, MatrixXd &bli) {
 	return (sqrt(pow(res.col(0).sum(), 2.0f) + pow(res.col(1).sum(), 2.0f)));
 }
 
+/**
+* 2D translation and rotation of one set of coordinates to another set of coordinates. 
+*/
 float f(Chromosome<float> c, MatrixXd &cbct, MatrixXd &bli) {
 	float shift_x = c[0];
 	float shift_y = c[1];
