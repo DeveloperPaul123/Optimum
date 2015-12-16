@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "geneticalgorithm.h"
 #include "utils.h"
+#include "icp.h"
 
 using namespace std;
 using namespace Eigen;
@@ -24,27 +25,60 @@ float gaBoothsFunctionTest(Chromosome<float> c);
 
 int main(int argc, const char* argv[]) {
 
-	cout << "Testing csv loading..." << endl;
-	cout << "Enter the file path: ";
+	cout << "Testing ICP..." << endl;
+	cout << "Enter reference points path: ";
 	char filepath[256];
 	cin.getline(filepath, 256);
 
 	std::string fp = std::string(filepath);
-	MatrixXd data = loadCsv(fp, ',');
+	MatrixXd cbct_raw = loadCsv(fp, ',');
 
-	cout << data << endl;
+	cout << "Enter target data path: ";
+	char filepathTarget[256];
+	cin.getline(filepathTarget, 256);
+
+	std::string fpTar = std::string(filepathTarget);
+	MatrixXd bli_raw = loadCsv(fpTar, ',');
+
+	MatrixXd cbct = cbct_raw.middleCols(1, 2);
+
+	MatrixXd bli = bli_raw.middleCols(1, 2);
+
+	//correct the data. 
+	for (int r = 0; r < 21; r++) {
+		double x = bli(r, 0);
+		double y = bli(r, 1);
+		double correctedX = (x - (0.5 * 2048))*0.0971;
+		double correctedY = ((0.5 * 2048) - y) * 0.0971;
+		bli(r, 0) = correctedX;
+		bli(r, 1) = correctedY;
+	}
+
+
+	cout << "CBCT: " << endl;
+	cout << cbct << endl;
+
+	cout << "BLI: " << endl;
+	cout << bli << endl; cout << endl;
+
+	MatrixXd rotation = OptimalPointMatcher::solveForOptimalRotation(cbct, bli);
+	MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(cbct, bli, rotation);
+
+	cout << "Rotation: " << endl;
+	cout << rotation << endl; cout << endl;
+	cout << "Translation: " << endl;
+	cout << trans << endl; cout << endl;
+
+	MatrixXd bliNew = OptimalPointMatcher::applyTransformation(bli,(trans * -1.0), rotation);
+	cout << "Transformed:" << endl;
+	cout << bliNew << endl; cout << endl;
+	double rmse = OptimalPointMatcher::RMSE(bliNew, cbct);
+	cout << "Error: " << rmse << endl;
+	cin.get();
+
 	cout << "Press any key to continue." << endl;
 	cin.get();
 
-	cout << "Testing csv write function..." << endl;
-	cout << "Enter the target file path and name: ";
-	char outpath[256];
-	cin.getline(outpath, 256);
-
-	writeCsv(outpath, ',', data);
-
-	cout << "Press any key to continue..." << endl;
-	cin.get();
 	testNM1D();
 
 	cout << "Press any key to conitue to GA 1D test..." << endl;
@@ -361,21 +395,19 @@ float f(Vector &vec, MatrixXd &cbct, MatrixXd &bli) {
 	float shift_y = vec[1];
 	float deg = vec[2];
 	MatrixXd ones = MatrixXd::Ones(21, 1);
-	MatrixXd shift(21, 2);
-	shift << shift_x*ones, shift_y*ones;
+	MatrixXd shift(2, 1);
+	shift(0, 0) = shift_x;
+	shift(1, 0) = shift_y;
 
 	Matrix2d trans_rot;
 	double degreeToRad = 3.14159 / 180.0;
 	trans_rot << cos((deg * degreeToRad)), -sin((deg * degreeToRad)), 
 	sin((deg*degreeToRad)), cos((deg*degreeToRad));
 	
-
-	MatrixXd trans = (bli * trans_rot) + shift;
+	MatrixXd trans = OptimalPointMatcher::applyTransformation(bli, shift, trans_rot);
 	//MatrixXd trans = (bli + shift);
 
-	MatrixXd res = trans - cbct;
-
-	return (sqrt(pow(res.col(0).sum(), 2.0f) + pow(res.col(1).sum(), 2.0f)));
+	return OptimalPointMatcher::RMSE(trans, cbct);
 }
 
 /**
@@ -386,8 +418,9 @@ float f(Chromosome<float> c, MatrixXd &cbct, MatrixXd &bli) {
 	float shift_y = c[1];
 	float deg = c[2];
 	MatrixXd ones = MatrixXd::Ones(21, 1);
-	MatrixXd shift(21, 2);
-	shift << shift_x*ones, shift_y*ones;
+	MatrixXd shift(2, 1);
+	shift(0, 0) = shift_x;
+	shift(1, 0) = shift_y;
 
 	Matrix2d trans_rot;
 	double degreeToRad = 3.14159 / 180.0;
@@ -395,12 +428,10 @@ float f(Chromosome<float> c, MatrixXd &cbct, MatrixXd &bli) {
 		sin((deg*degreeToRad)), cos((deg*degreeToRad));
 
 
-	MatrixXd trans = (bli + shift)*trans_rot;
+	MatrixXd trans = OptimalPointMatcher::applyTransformation(bli, shift, trans_rot);
 	//MatrixXd trans = (bli + shift);
 
-	MatrixXd res = trans - cbct;
-
-	return (sqrt(pow(res.col(0).sum(), 2.0f) + pow(res.col(1).sum(), 2.0f)));
+	return OptimalPointMatcher::RMSE(trans, cbct);
 }
 
 /**
