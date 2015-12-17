@@ -7,6 +7,8 @@
 #include <Eigen\Dense>
 #include <Eigen\Jacobi>
 
+#define PI 3.14159265
+
 using namespace std;
 using namespace Eigen;
 
@@ -100,11 +102,11 @@ public:
 	* @param other the other point to subtract. 
 	* @return Point the result of subtracting other from this point. 
 	*/
-	Point & operator-(Point &other) {
+	Point operator-(Point other) {
 		Point p;
 		p.prepare(other.size());
 		for (int i = 0; i < other.size(); i++) {
-			p.setValue(coords[i] - other[i], i);
+			p[i] = coords[i] - other[i];
 		}
 		return p;
 	}
@@ -115,7 +117,8 @@ public:
 	* @return double the distance. 
 	*/
 	double distanceTo(Point &other) {
-		Point diff = *this - other;
+		Point p = Point(*this);
+		Point diff = p - other;
 		vector<double> sqs;
 		for (int i = 0; i < other.size(); i++) {
 			double d = diff[i];
@@ -134,105 +137,69 @@ public:
 };
 
 /**
-* Enumeration for if we're in 3D or 2D.
-*/
-enum PointType { TWO_D = 0, THREE_D };
-
-/**
-* Structure used to setup parameters for the ICP algorithm. 
-*/
-struct ICPSettings{
-	PointType pointType;
-};
-
-/**
-* Iterative closest point algorithm. 
-*/
-class ICP {
-public:
-	/**
-	* Iterative closest point algorithm. 
-	* @param reference the ref data. 
-	* @param target the target points. 
-	* @param set ICPSettings struct. 
-	*/
-	ICP(MatrixXd reference, MatrixXd target, ICPSettings set) {
-		this->mRef = reference;
-		this->mTarget = target;
-	}
-
-	//TODO: Solve. 
-
-private:
-	MatrixXd mRef;
-	MatrixXd mTarget;
-	MatrixXd solvedTransform, solvedRotation;
-	MatrixXd transform;
-	MatrixXd rotation;
-};
-
-/**
 * Helper class with static functions to calculate optimal rotation and translation using
-* the Kabsch method. 
+* the Kabsch method.
 */
 class OptimalPointMatcher {
 
 public:
 
 	/**
-	* Solves for the optimal translation between the reference and target points given an optimal rotation matrix. 
-	* @param ref the reference points. 
-	* @param target the target points. 
+	* Solves for the optimal translation between the reference and target points 
+	* given an optimal rotation matrix. This is trying to map the reference to the target. 
+	* @param ref the reference points.
+	* @param target the target points.
 	* @optimalRotation the optimal rotation matrix calculated by the function
-	*				solveForOptimalRotation. 
+	*				solveForOptimalRotation.
 	*/
 	static MatrixXd solveForOptimalTranslation(MatrixXd ref, MatrixXd target, MatrixXd optimalRotation) {
-		MatrixXd centroidOne = getCentroid(ref);
-		MatrixXd centroidTwo = getCentroid(target);
+		MatrixXd centroidOne = getCentroid(target);
+		MatrixXd centroidTwo = getCentroid(ref);
 		MatrixXd translation = ((optimalRotation*-1.0)*centroidOne) + centroidTwo;
 		return translation;
 	}
 
 	/**
-	* Solves for the optimal rotation matrix using singular value decomposition. 
+	* Solves for the optimal rotation matrix using singular value decomposition. This is
+	* trying to map the reference to the target. 
 	* @param ref the reference points
-	* @param target the target points. 
-	* @return MatrixXd the optimal rotation matrix.	
+	* @param target the target points.
+	* @return MatrixXd the optimal rotation matrix.
 	*/
 	static MatrixXd solveForOptimalRotation(MatrixXd ref, MatrixXd target) {
 
-		MatrixXd centroidOne = getCentroid(ref);
-		MatrixXd centroidTwo = getCentroid(target);
+		MatrixXd centroidOne = getCentroid(target);
+		MatrixXd centroidTwo = getCentroid(ref);
 
 		//center points at centroid
 		int rows = ref.rows();
 		for (int r = 0; r < rows; r++) {
-			ref.row(r) = ref.row(r) - centroidOne.transpose();
-			target.row(r) = target.row(r) - centroidTwo.transpose();
+			ref.row(r) = ref.row(r) - centroidTwo.transpose();
+			target.row(r) = target.row(r) - centroidOne.transpose();
 		}
 
 		//calculate covarience matrix.
-		MatrixXd cov = ref.transpose() * target;
+		MatrixXd cov = target.transpose() * ref;
 
 		//calculate svd
 		JacobiSVD<MatrixXd> svd(cov, ComputeFullU | ComputeFullV);
-		
+
 		//if svd(H) = [U, S, V], then rotation R = V*U(transpose)
 		MatrixXd rotation = svd.matrixV() * svd.matrixU().transpose();
 
 		//check for correction. 
 		if (rotation.determinant() < 0) {
-			rotation.row(rotation.rows()) *= -1;
+			rotation.row(rotation.rows()-1) *= -1;
 		}
 
 		return rotation;
 	}
 
 	/**
-	* Calculates the root mean square error between two matricies. 
-	* @param dataOne the first matrix in the comparison. 
-	* @param dataTwo the second matrix in the comparison. 
-	* @return double the root mean square error or 0 if the matrix sizes don't match. 
+	* Calculates the root mean square error between two matricies.
+	* @param dataOne the first matrix in the comparison.
+	* @param dataTwo the second matrix in the comparison.
+	* @return double the root mean square error or 0 if the matrix sizes don't match.
 	*/
 	static double RMSE(MatrixXd dataOne, MatrixXd dataTwo) {
 		if (dataOne.size() != dataTwo.size()) {
@@ -263,11 +230,11 @@ public:
 		}
 	}
 	/**
-	* Applies a transformation to a given array of data with a translation and a rotation. 
-	* @param data the original data. 
-	* @param translation the translation matrix, typically a row or column vector. 
-	* @param rotation a rotation matrix. 
-	* @return MatrixXd the transformed data set of data. 
+	* Applies a transformation to a given array of data with a translation and a rotation.
+	* @param data the original data.
+	* @param translation the translation matrix, typically a row or column vector.
+	* @param rotation a rotation matrix.
+	* @return MatrixXd the transformed data set of data.
 	*/
 	static MatrixXd applyTransformation(MatrixXd data, MatrixXd translation, MatrixXd rotation) {
 		MatrixXd trans(data.rows(), data.cols());
@@ -282,7 +249,7 @@ public:
 			else if (translation.rows() == 1) {
 				//row vector. 
 				for (int i = 0; i < data.cols(); i++) {
-					trans.row(i) = translation(0, i) * ones;
+					trans.col(i) = translation(0, i) * ones;
 				}
 			}
 		}
@@ -294,11 +261,11 @@ public:
 	* column in the data corresponding to each row of the column vector. So if your input is of the size n X i, then
 	* this function will return a column vector of size i x 1 with the number of each row equal to the mean of the ith column in your
 	* data.
-	* @param points the data. 
-	* @return MatrixXd a column vector with the centroid points. 
+	* @param points the data.
+	* @return MatrixXd a column vector with the centroid points.
 	*/
 	static MatrixXd getCentroid(MatrixXd points) {
-		
+
 		int columns = points.cols();
 		int rows = points.rows();
 		//create a column vector. 
@@ -312,4 +279,168 @@ public:
 	}
 
 };
+
+/**
+* Enumeration for if we're in 3D or 2D.
+*/
+enum PointType { TWO_D = 0, THREE_D };
+
+/**
+* Structure used to setup parameters for the ICP algorithm. 
+*/
+struct ICPSettings{
+	PointType pointType;
+	int maxIterations;
+};
+
+/**
+* Iterative closest point algorithm. 
+*/
+class ICP {
+
+	MatrixXd mRef;
+	MatrixXd mTarget;
+	MatrixXd curRef;
+	MatrixXd solvedTransform, solvedRotation;
+	MatrixXd transform, lastTransform;
+	MatrixXd rotation, lastRotation;
+	vector<Point> refPoints;
+	vector<Point> tarPoints;
+	vector<Point> closestPoints;
+	int iterations;
+
+public:
+	/**
+	* Iterative closest point algorithm. It is assumed that a row in both the target and 
+	* reference data is a point. 
+	* @param reference the ref data. 
+	* @param target the target points. 
+	* @param set ICPSettings struct. 
+	*/
+	ICP(MatrixXd reference, MatrixXd target, ICPSettings set) {
+		this->mRef = reference;
+		this->mTarget = target;
+		this->iterations = set.maxIterations;
+		this->curRef = reference;
+	}
+
+	void solve() {
+		
+		rotation = MatrixXd::Identity(mRef.cols(), mRef.cols());
+		transform = MatrixXd::Zero(mRef.cols(), 1);
+
+		cout << rotation << endl; cout << endl;
+		cout << transform << endl; cout << endl;
+
+		while (iterations > 0) {
+			
+			closestPoints.clear();
+			tarPoints.clear();
+			refPoints.clear();
+		
+			lastTransform = transform;
+			lastRotation = rotation;
+
+			MatrixXd closest = match();
+
+			//get rotation and translation. 
+			MatrixXd newRot = OptimalPointMatcher::solveForOptimalRotation(closest, mTarget);
+			MatrixXd newTrans = OptimalPointMatcher::solveForOptimalTranslation(closest, mTarget, newRot);
+			
+			double lastAngle = rotMatrixToDegrees(lastRotation);
+			double angle = rotMatrixToDegrees(newRot);
+			double newAngle = lastAngle + angle;
+
+			rotation = angleToRotMatrix(newAngle, lastRotation.rows());
+
+			transform = newTrans;
+			
+			cout << rotation << endl; cout << endl;
+			cout << transform << endl; cout << endl;
+			
+			//update the target. 
+			MatrixXd newRef = OptimalPointMatcher::applyTransformation(curRef, transform, rotation);
+			double error = OptimalPointMatcher::RMSE(mTarget, newRef);
+
+			cout << "Error: " << error << endl;
+
+			curRef = newRef;
+
+			//work towards ending of loop. 
+			iterations -= 1;
+		}
+	}
+
+	MatrixXd getBestTranslation() {
+		return transform;
+	}
+
+	MatrixXd getBestRotation() {
+		return rotation;
+	}
+
+private:
+	MatrixXd match() {
+		//set the points. 
+		int rows = mRef.rows();
+		int cols = mRef.cols();
+		for (int r = 0; r < rows; r++) {
+			Point ref;
+			Point tar;
+			ref.prepare(cols);
+			tar.prepare(cols);
+			for (int c = 0; c < cols; c++) {
+				ref.setValue(curRef(r, c), c);
+				tar.setValue(mTarget(r, c), c);
+			}
+			tarPoints.push_back(tar);
+			refPoints.push_back(ref);
+		}
+
+		//get the closest points between target and reference. 
+		for (int i = 0; i < refPoints.size(); i++) {
+			double bestDistance = 1000000.0;
+			Point tar = tarPoints.at(i);
+			Point best;
+			best.prepare(refPoints.at(0).size());
+			//linear search. 
+			for (int j = 0; j < tarPoints.size(); j++) {
+				Point ref = refPoints.at(j);
+				double dist = tar.distanceTo(ref);
+				if (dist < bestDistance) {
+					bestDistance = dist;
+					best = ref;
+				}
+			}
+			closestPoints.push_back(best);
+		}
+
+		//create matrix of closest points. 
+		MatrixXd closest(closestPoints.size(), closestPoints.at(0).size());
+		for (int x = 0; x < closestPoints.size(); x++) {
+			Point p = closestPoints.at(x);
+			for (int y = 0; y < p.size(); y++) {
+				closest(x, y) = p[y];
+			}
+		}
+
+		return closest;
+	}
+
+	double rotMatrixToDegrees(MatrixXd rot) {
+		return asin(rot(1, 0)) * 180.0 / PI;
+	}
+
+	MatrixXd angleToRotMatrix(double angle, int size) {
+		MatrixXd rot(size, size);
+		rot(0, 0) = cos(angle * PI / 180.0);
+		rot(0, 1) = -sin(angle * PI / 180.0);
+		rot(1, 0) = sin(angle * PI / 180.0);
+		rot(1, 1) = cos(angle * PI / 180.0);
+
+		return rot;
+	}
+};
+
+
 #endif ICP_H

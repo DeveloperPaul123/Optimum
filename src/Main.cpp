@@ -25,7 +25,7 @@ float gaBoothsFunctionTest(Chromosome<float> c);
 
 int main(int argc, const char* argv[]) {
 
-	cout << "Testing ICP..." << endl;
+	cout << "Testing Kabsch Algorithm..." << endl;
 	cout << "Enter reference points path: ";
 	char filepath[256];
 	cin.getline(filepath, 256);
@@ -61,21 +61,42 @@ int main(int argc, const char* argv[]) {
 	cout << "BLI: " << endl;
 	cout << bli << endl; cout << endl;
 
-	MatrixXd rotation = OptimalPointMatcher::solveForOptimalRotation(cbct, bli);
-	MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(cbct, bli, rotation);
+	MatrixXd rotation = OptimalPointMatcher::solveForOptimalRotation(bli, cbct);
+	MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(bli, cbct, rotation);
 
 	cout << "Rotation: " << endl;
 	cout << rotation << endl; cout << endl;
 	cout << "Translation: " << endl;
 	cout << trans << endl; cout << endl;
 
-	MatrixXd bliNew = OptimalPointMatcher::applyTransformation(bli,(trans * -1.0), rotation);
+	MatrixXd bliNew = OptimalPointMatcher::applyTransformation(bli, (trans*-1.0), rotation);
 	cout << "Transformed:" << endl;
 	cout << bliNew << endl; cout << endl;
 	double rmse = OptimalPointMatcher::RMSE(bliNew, cbct);
 	cout << "Error: " << rmse << endl;
 	cin.get();
 
+	ICPSettings settings;
+	settings.maxIterations = 10;
+	settings.pointType = THREE_D;
+
+	cout << "Press any key to try ICP." << endl;
+	cin.get();
+
+	ICP icp(bli, cbct, settings);
+	icp.solve();
+
+	MatrixXd r = icp.getBestRotation();
+	MatrixXd t = icp.getBestTranslation();
+
+	cout << "Rotation: " << endl;
+	cout << r << endl; cout << endl;
+	cout << "Translation: " << endl;
+	cout << t << endl; cout << endl;
+
+	MatrixXd bNew = OptimalPointMatcher::applyTransformation(bli, (t * -1.0), r);
+	double rootErr = OptimalPointMatcher::RMSE(bNew, cbct);
+	cout << "Error: " << rootErr << endl;
 	cout << "Press any key to continue." << endl;
 	cin.get();
 
