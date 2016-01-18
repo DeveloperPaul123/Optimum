@@ -9,6 +9,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace Optimum;
 float f(Chromosome<float>, MatrixXd &cbct, MatrixXd &bli);
 float f(Vector &vec, MatrixXd &cbct, MatrixXd &bli);
 void testTransform();
