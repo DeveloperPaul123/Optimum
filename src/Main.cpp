@@ -41,9 +41,9 @@ int main(int argc, const char* argv[]) {
 	std::string fpTar = std::string(filepathTarget);
 	MatrixXd bli_raw = loadCsv(fpTar, ',');
 
-	MatrixXd cbct = cbct_raw.middleCols(1, 2);
+	MatrixXd cbct = cbct_raw.middleCols(0, 2);
 
-	MatrixXd bli = bli_raw.middleCols(1, 2);
+	MatrixXd bli = bli_raw.middleCols(0, 2);
 
 	//correct the data. 
 	for (int r = 0; r < 21; r++) {

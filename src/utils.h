@@ -64,8 +64,7 @@ namespace Optimum {
 			filePath.append(".csv");
 		}
 
-		std::ofstream outFile;
-		outFile.open(filePath);
+		std::ofstream outFile(filePath, std::ios::out);
 		int rows = data.rows();
 		int cols = data.cols();
 		for (int r = 0; r < rows; r++) {
