@@ -16,6 +16,8 @@ I made this library because these types of algorithms (for optimization/minimiza
 
 #### Usage ####
 
+* **Note:** All classes are under the `Optimum` namespace. This is to avoid conflicts with classes from other namespaces like std or open cv (which I use frequently). 
+
 * Nelder-Mead Optimizer
 
 ````cpp
@@ -83,6 +85,10 @@ float initialGuess[] = { 3.0f };
 	//calculate root mean squre error between new and reference points. 
 	double rmse = OptimalPointMatcher::RMSE(B_trans, A);
 ````
+
+#### Contributing ####
+-------
+If you would like to contribute, feel free to fork this repository and create a pull request. This project is configured with Cmake 3.3 or higher and depends on [Eigen] (https://bitbucket.org/eigen/eigen/) which is a header only, linear algebra C++ library. 
 
 #### License ####
 -------
