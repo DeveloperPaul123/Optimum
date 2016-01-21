@@ -205,28 +205,41 @@ namespace Optimum {
 				return 0.0f;
 			}
 			else {
+				//first take difference of the two arrays. 
 				Eigen::MatrixXd result = dataOne - dataTwo;
+				//create a container for the squares. 
+				Eigen::MatrixXd squares = Eigen::MatrixXd::Zero(result.rows(), result.cols());
 				for (int i = 0; i < result.rows(); i++) {
 					for (int j = 0; j < result.cols(); j++) {
 						double val = result(i, j);
 						double newVal = val*val;
-						result(i, j) = newVal;
+						squares(i, j) = newVal;
 					}
 				}
 
-				std::vector<double> sqrts;
-				for (int r = 0; r < result.rows(); r++) {
-					double sumSq = result.row(r).sum();
-					sqrts.push_back(sqrt(sumSq));
+				//vector for the sum of the rows. 
+				std::vector<double> sumSqrs;
+				for (int r = 0; r < squares.rows(); r++) {
+					double sum = squares.row(r).sum();
+					//push back the square root of each row sum. 
+					sumSqrs.push_back(sum);
 				}
 
+				//get the square roots. 
+				std::vector<double> sqrts;
+				for (int q = 0; q < sumSqrs.size(); q++) {
+					sqrts.push_back(std::sqrt(sumSqrs.at(q)));
+				}
+
+				//calcuate rmse as the sum of square roots. 
 				double rmse = 0.0;
 				for (int x = 0; x < sqrts.size(); x++) {
-					rmse += sqrts[x];
+					rmse += sqrts.at(x);;
 				}
 				return rmse;
 			}
 		}
+
 		/**
 		* Applies a transformation to a given array of data with a translation and a rotation.
 		* @param data the original data.
@@ -251,7 +264,7 @@ namespace Optimum {
 					}
 				}
 			}
-			return (data * rotation) + trans;
+			return (data + trans) * rotation;
 		}
 
 		/**

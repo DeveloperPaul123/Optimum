@@ -46,11 +46,11 @@ int main(int argc, const char* argv[]) {
 	MatrixXd bli = bli_raw.middleCols(0, 2);
 
 	//correct the data. 
-	for (int r = 0; r < 21; r++) {
+	for (int r = 0; r < bli.rows(); r++) {
 		double x = bli(r, 0);
 		double y = bli(r, 1);
-		double correctedX = (x - (0.5 * 2048))*0.0971;
-		double correctedY = ((0.5 * 2048) - y) * 0.0971;
+		double correctedX = (x - (0.5 * 1024))*0.1136;
+		double correctedY = ((0.5 * 1024) - y) * 0.1136;
 		bli(r, 0) = correctedX;
 		bli(r, 1) = correctedY;
 	}
