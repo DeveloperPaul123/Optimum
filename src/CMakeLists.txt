@@ -9,10 +9,18 @@ set(OPTIMUM_VERSION_MAJOR "0")
 set(OPTIMUM_VERSION_MINOR "1")
 set(OPTIMUM_VERSION_PATCH "0")
 
+set(OPTIMUM_VERSION "${OPTIMUM_VERSION_MAJOR}.${OPTIMUM_VERSION_MINOR}.${OPTIMUM_VERSION_PATCH}")
+
 project(Optimum)
 
+
+set(CMAKE_CXX_FLAGS "-g -Wall")
+
 set(HEADER_FILES neldermead.h geneticalgorithm.h utils.h icp.h)
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES 
+	main.cpp)
+
+option(test "Build all test cases." OFF)
 
 set(EIGEN_DIR CACHE PATH "Eigen library directory.")
 if(NOT EIGEN_DIR) 
@@ -22,6 +30,20 @@ endif()
 include_directories(${EIGEN_DIR})
 
 add_executable(Optimum WIN32 ${HEADER_FILES} ${SOURCE_FILES})
+
+if(test)
+	add_subdirectory(lib/googletest-release-1.7.0)
+	enable_testing()
+	include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+	
+	add_executable(runUnitTests test.cpp)
+	
+	target_link_libraries(runUnitTests gtest gtest_main)
+	
+	
+	add_test(NAME TEST COMMAND runUnitTests)
+	
+endif(test)
 
 set_source_files_properties(Optimum PROPERTIES LINER_LANGUAGE "CXX")
 set_target_properties(Optimum PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")

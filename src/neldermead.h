@@ -349,6 +349,10 @@ namespace Optimum {
 	class NelderMeadMinimizer {
 	public:
 
+		NelderMeadMinimizer() {
+
+		}
+
 		/**
 		* Constructor for Nelder-Mead Optimizer.
 		* @param dimension the number of variables we are looking to optimize.
