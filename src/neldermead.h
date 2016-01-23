@@ -352,6 +352,10 @@ namespace Optimum {
 		NelderMeadMinimizer() {
 
 		}
+		
+		~NelderMeadMinimizer() {
+
+		}
 
 		/**
 		* Constructor for Nelder-Mead Optimizer.

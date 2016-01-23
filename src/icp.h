@@ -180,7 +180,7 @@ namespace Optimum {
 			Eigen::MatrixXd cov = target.transpose() * ref;
 
 			//calculate svd
-			Eigen::JacobiSVD<Eigen::MatrixXd> svd(cov, ComputeFullU | ComputeFullV);
+			Eigen::JacobiSVD<Eigen::MatrixXd> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
 			//if svd(H) = [U, S, V], then rotation R = V*U(transpose)
 			Eigen::MatrixXd rotation = svd.matrixV() * svd.matrixU().transpose();
@@ -328,7 +328,7 @@ namespace Optimum {
 		* @param target the target points.
 		* @param set ICPSettings struct.
 		*/
-		ICP(MatrixXd reference, MatrixXd target, ICPSettings set) {
+		ICP(Eigen::MatrixXd reference, Eigen::MatrixXd target, ICPSettings set) {
 			this->mRef = reference;
 			this->mTarget = target;
 			this->iterations = set.maxIterations;
@@ -337,8 +337,8 @@ namespace Optimum {
 
 		void solve() {
 
-			rotation = MatrixXd::Identity(mRef.cols(), mRef.cols());
-			transform = MatrixXd::Zero(mRef.cols(), 1);
+			rotation = Eigen::MatrixXd::Identity(mRef.cols(), mRef.cols());
+			transform = Eigen::MatrixXd::Zero(mRef.cols(), 1);
 
 			while (iterations > 0) {
 
@@ -349,11 +349,11 @@ namespace Optimum {
 				lastTransform = transform;
 				lastRotation = rotation;
 
-				MatrixXd closest = match();
+				Eigen::MatrixXd closest = match();
 
 				//get rotation and translation. 
-				MatrixXd newRot = OptimalPointMatcher::solveForOptimalRotation(closest, mTarget);
-				MatrixXd newTrans = OptimalPointMatcher::solveForOptimalTranslation(closest, mTarget, newRot);
+				Eigen::MatrixXd newRot = OptimalPointMatcher::solveForOptimalRotation(closest, mTarget);
+				Eigen::MatrixXd newTrans = OptimalPointMatcher::solveForOptimalTranslation(closest, mTarget, newRot);
 
 				double lastAngle = rotMatrixToDegrees(lastRotation);
 				double angle = rotMatrixToDegrees(newRot);
@@ -364,7 +364,7 @@ namespace Optimum {
 				transform = newTrans;
 
 				//update the target. 
-				MatrixXd newRef = OptimalPointMatcher::applyTransformation(curRef, transform, rotation);
+				Eigen::MatrixXd newRef = OptimalPointMatcher::applyTransformation(curRef, transform, rotation);
 				double error = OptimalPointMatcher::RMSE(mTarget, newRef);
 
 				std::cout << "Error: " << error << std::endl;
@@ -376,16 +376,16 @@ namespace Optimum {
 			}
 		}
 
-		MatrixXd getBestTranslation() {
+		Eigen::MatrixXd getBestTranslation() {
 			return transform;
 		}
 
-		MatrixXd getBestRotation() {
+		Eigen::MatrixXd getBestRotation() {
 			return rotation;
 		}
 
 	private:
-		MatrixXd match() {
+		Eigen::MatrixXd match() {
 			//set the points. 
 			int rows = mRef.rows();
 			int cols = mRef.cols();
@@ -421,7 +421,7 @@ namespace Optimum {
 			}
 
 			//create matrix of closest points. 
-			MatrixXd closest(closestPoints.size(), closestPoints.at(0).size());
+			Eigen::MatrixXd closest(closestPoints.size(), closestPoints.at(0).size());
 			for (int x = 0; x < closestPoints.size(); x++) {
 				Point p = closestPoints.at(x);
 				for (int y = 0; y < p.size(); y++) {
@@ -432,12 +432,12 @@ namespace Optimum {
 			return closest;
 		}
 
-		double rotMatrixToDegrees(MatrixXd rot) {
+		double rotMatrixToDegrees(Eigen::MatrixXd rot) {
 			return asin(rot(1, 0)) * 180.0 / PI;
 		}
 
-		MatrixXd angleToRotMatrix(double angle, int size) {
-			MatrixXd rot(size, size);
+		Eigen::MatrixXd angleToRotMatrix(double angle, int size) {
+			Eigen::MatrixXd rot(size, size);
 			rot(0, 0) = cos(angle * PI / 180.0);
 			rot(0, 1) = -sin(angle * PI / 180.0);
 			rot(1, 0) = sin(angle * PI / 180.0);
