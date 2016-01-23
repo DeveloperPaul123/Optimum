@@ -14,7 +14,7 @@ set(OPTIMUM_VERSION "${OPTIMUM_VERSION_MAJOR}.${OPTIMUM_VERSION_MINOR}.${OPTIMUM
 project(Optimum)
 
 
-set(CMAKE_CXX_FLAGS "-g -Wall")
+set(CMAKE_CXX_FLAGS "-Wall")
 
 set(HEADER_FILES neldermead.h geneticalgorithm.h utils.h icp.h)
 set(SOURCE_FILES 
@@ -31,6 +31,9 @@ include_directories(${EIGEN_DIR})
 
 add_executable(Optimum WIN32 ${HEADER_FILES} ${SOURCE_FILES})
 
+set_source_files_properties(Optimum PROPERTIES LINER_LANGUAGE "CXX")
+set_target_properties(Optimum PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
+
 if(test)
 	add_subdirectory(lib/googletest-release-1.7.0)
 	enable_testing()
@@ -40,13 +43,9 @@ if(test)
 	
 	target_link_libraries(runUnitTests gtest gtest_main)
 	
-	
-	add_test(NAME TEST COMMAND runUnitTests)
+	add_test(runUnitTests runUnitTests)
 	
 endif(test)
-
-set_source_files_properties(Optimum PROPERTIES LINER_LANGUAGE "CXX")
-set_target_properties(Optimum PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
 #Add target to build documents from visual studio.
 set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)

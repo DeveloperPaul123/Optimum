@@ -33,9 +33,10 @@ TEST_F(NelderMeadTest, MethodBarDoesAbc) {
 	nmm.initialGuess(v);
 	while (!nmm.done()) {
 		double x = v[0];
-		float score = (pow((x - 3.0f), 2.0f)) + 5.0f;
+		float score = x - 3.0;
 		v = nmm.step(v, score);
 	}
-	EXPECT_EQ(3.000, v.at(0));
-	
+	double best = v.at(0);
+	EXPECT_NEAR(3.0, v.at(0), 0.1);
 }
+
