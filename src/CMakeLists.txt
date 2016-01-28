@@ -35,6 +35,7 @@ set_source_files_properties(Optimum PROPERTIES LINER_LANGUAGE "CXX")
 set_target_properties(Optimum PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
 if(test)
+	set( gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" )
 	add_subdirectory(lib/googletest-release-1.7.0)
 	enable_testing()
 	include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
