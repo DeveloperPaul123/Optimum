@@ -6,10 +6,17 @@
 #include <math.h>
 #include <Eigen\Dense>
 #include <Eigen\Jacobi>
+#include <Eigen\Geometry>
 
 #define PI 3.14159265
 
 namespace Optimum {
+
+	/**
+	* Enumeration for if we're in 3D or 2D.
+	*/
+	enum PointType { TWO_D = 0, THREE_D };
+
 	/**
 	* Simple point class for ICP algorithm.
 	*/
@@ -134,63 +141,107 @@ namespace Optimum {
 
 	};
 
+	struct PointMatcherSettings {
+		PointType dimension = TWO_D;
+		bool doScale = false;
+	};
+
+	struct Transform {
+		Eigen::MatrixXd rotation;
+		Eigen::VectorXd translation;
+		double scale;
+	};
 	/**
 	* Helper class with static functions to calculate optimal rotation and translation using
 	* the Kabsch method.
 	*/
-	class OptimalPointMatcher {
+	class PointMatcher {
 
 	public:
 
-		/**
-		* Solves for the optimal translation between the reference and target points
-		* given an optimal rotation matrix. This is trying to map the reference to the target.
-		* @param ref the reference points.
-		* @param target the target points.
-		* @optimalRotation the optimal rotation matrix calculated by the function
-		*				solveForOptimalRotation.
-		*/
-		static Eigen::MatrixXd solveForOptimalTranslation(Eigen::MatrixXd ref, Eigen::MatrixXd target, Eigen::MatrixXd optimalRotation) {
-			Eigen::MatrixXd centroidOne = getCentroid(target);
-			Eigen::MatrixXd centroidTwo = getCentroid(ref);
-			Eigen::MatrixXd translation = ((optimalRotation*-1.0)*centroidOne) + centroidTwo;
-			return translation;
+		PointMatcher(PointMatcherSettings settings) {
+			this->mSettings = settings;
 		}
 
 		/**
-		* Solves for the optimal rotation matrix using singular value decomposition. This is
-		* trying to map the reference to the target.
-		* @param ref the reference points
-		* @param target the target points.
-		* @return MatrixXd the optimal rotation matrix.
+		* Solves for the optimal transformation and rotation (and scale) to map the target data point
+		* map to the reference data point map. It is assumed that the mapping of this points are one
+		* to one. I.e. the first point in the target is known to map to the first point of the reference. 
+		* @param target the target points to align.
+		* @param ref the reference points to align to.
+		* @return Transform a transformation that contains:
+		*		Transform.rotation: the rotation matrix
+		*		Transform.translation: the translation vector.
+		*		Transform.scale: the scale factor. 
 		*/
-		static Eigen::MatrixXd solveForOptimalRotation(Eigen::MatrixXd ref, Eigen::MatrixXd target) {
+		Transform solve(Eigen::MatrixXd target, Eigen::MatrixXd ref) {
+			//The transform we will return.
+			Transform transform;
 
 			Eigen::MatrixXd centroidOne = getCentroid(target);
 			Eigen::MatrixXd centroidTwo = getCentroid(ref);
 
 			//center points at centroid
 			int rows = ref.rows();
+			Eigen::MatrixXd centeredRef(ref.rows(), ref.cols());
+			Eigen::MatrixXd centeredTar(target.rows(), target.cols());
+			double f_sd2 = 0;
 			for (int r = 0; r < rows; r++) {
-				ref.row(r) = ref.row(r) - centroidTwo.transpose();
-				target.row(r) = target.row(r) - centroidOne.transpose();
+				//transpose the centroids because they're column vectors.
+				//each row is a point.
+				centeredRef.row(r) = ref.row(r) - centroidTwo.transpose();
+				centeredTar.row(r) = target.row(r) - centroidOne.transpose();
+
+				f_sd2 += centeredTar.row(r).squaredNorm();
 			}
 
-			//calculate covarience matrix.
-			Eigen::MatrixXd cov = target.transpose() * ref;
+			//calculate covarience matrix to align A (target) to B (reference)
+			// H = sum ((Pa - centroidA)*(Pb - centroidB)^T)
+			//H should be 3x3
+			Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(ref.cols(), ref.cols());
+			for (int i = 0; i < rows; i++) {
+				cov.noalias() += centeredTar.row(i).transpose() * centeredRef.row(i);
+			}
 
 			//calculate svd
-			Eigen::JacobiSVD<Eigen::MatrixXd> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
+			Eigen::JacobiSVD<Eigen::MatrixXd> svd(cov, Eigen::QRPreconditioners::FullPivHouseholderQRPreconditioner |
+				Eigen::ComputeFullU | Eigen::ComputeFullV);
 
 			//if svd(H) = [U, S, V], then rotation R = V*U(transpose)
+			//eigen returns SVD(A) = USV*
+
 			Eigen::MatrixXd rotation = svd.matrixV() * svd.matrixU().transpose();
 
-			//check for correction. 
-			if (rotation.determinant() < 0) {
-				rotation.row(rotation.rows() - 1) *= -1;
+			//check for correction.
+			double f_det = rotation.determinant();
+			Eigen::VectorXd e = Eigen::VectorXd::Ones(rotation.rows());
+			if (f_det < 0) {
+				int rows = e.rows() - 1;
+				int cols = e.cols() - 1;
+				e(rows, cols) = -1;
 			}
 
-			return rotation;
+			if (f_det < 0) {
+				//recompute the rotation part if the determinant was negative
+				rotation.noalias() = svd.matrixV() * e.asDiagonal() * svd.matrixU().transpose();
+			}
+
+			//renormalizes the rotation matrix, more orthogonal results. 
+			//only works in 3d. 
+			if (mSettings.dimension == THREE_D) {
+				rotation = Eigen::Quaterniond((Eigen::Matrix3d)rotation)
+					.normalized().toRotationMatrix();
+			}
+			
+			double f_inv_scale = svd.singularValues().dot(e) / f_sd2;
+			if (mSettings.doScale) {
+				rotation *= f_inv_scale;
+			}
+			Eigen::MatrixXd translation = centroidTwo - (rotation * centroidOne);
+			transform.rotation = rotation;
+			transform.translation = translation;
+			transform.scale = f_inv_scale;
+			return transform;
 		}
 
 		/**
@@ -264,7 +315,13 @@ namespace Optimum {
 					}
 				}
 			}
-			return (data + trans) * rotation;
+
+			Eigen::MatrixXd transData = data + trans;
+			Eigen::MatrixXd transformed(transData.rows(), transData.cols());
+			for (int i = 0; i < transData.rows(); i++) {
+				transformed.row(i) = rotation * transData.row(i).transpose();
+			}
+			return transformed;
 		}
 
 		/**
@@ -289,12 +346,12 @@ namespace Optimum {
 			return centroid;
 		}
 
+		private:
+			PointMatcherSettings mSettings;
+
 	};
 
-	/**
-	* Enumeration for if we're in 3D or 2D.
-	*/
-	enum PointType { TWO_D = 0, THREE_D };
+	
 
 	/**
 	* Structure used to setup parameters for the ICP algorithm.
@@ -319,6 +376,7 @@ namespace Optimum {
 		std::vector<Point> tarPoints;
 		std::vector<Point> closestPoints;
 		int iterations;
+		PointMatcher *matcher;
 
 	public:
 		/**
@@ -328,11 +386,14 @@ namespace Optimum {
 		* @param target the target points.
 		* @param set ICPSettings struct.
 		*/
-		ICP(Eigen::MatrixXd reference, Eigen::MatrixXd target, ICPSettings set) {
+		ICP(Eigen::MatrixXd target, Eigen::MatrixXd reference, ICPSettings set) {
 			this->mRef = reference;
 			this->mTarget = target;
 			this->iterations = set.maxIterations;
 			this->curRef = reference;
+			PointMatcherSettings pSets;
+			pSets.dimension = set.pointType;
+			this->matcher = new PointMatcher(pSets);
 		}
 
 		void solve() {
@@ -352,8 +413,9 @@ namespace Optimum {
 				Eigen::MatrixXd closest = match();
 
 				//get rotation and translation. 
-				Eigen::MatrixXd newRot = OptimalPointMatcher::solveForOptimalRotation(closest, mTarget);
-				Eigen::MatrixXd newTrans = OptimalPointMatcher::solveForOptimalTranslation(closest, mTarget, newRot);
+				Transform t = matcher->solve(closest, mTarget);
+				Eigen::MatrixXd newRot = t.rotation;
+				Eigen::MatrixXd newTrans = t.translation;
 
 				double lastAngle = rotMatrixToDegrees(lastRotation);
 				double angle = rotMatrixToDegrees(newRot);
@@ -361,14 +423,15 @@ namespace Optimum {
 
 				rotation = angleToRotMatrix(newAngle, lastRotation.rows());
 
-				transform = newTrans;
-
+				transform = newTrans + lastTransform;
 				//update the target. 
-				Eigen::MatrixXd newRef = OptimalPointMatcher::applyTransformation(curRef, transform, rotation);
-				double error = OptimalPointMatcher::RMSE(mTarget, newRef);
+				Eigen::MatrixXd newRef = PointMatcher::applyTransformation(curRef, transform, rotation);
+				double error = PointMatcher::RMSE(mTarget, newRef);
 
-				std::cout << "Error: " << error << std::endl;
-
+				//check for termination.
+				if (error < 0.0001) {
+					break;
+				}
 				curRef = newRef;
 
 				//work towards ending of loop. 
