@@ -19,8 +19,7 @@ namespace Optimum {
 	* @return MatrixXd and Eigen matrix of unknown dimension.
 	*/
 	static MatrixXd loadCsv(std::string filepath, char delimiter) {
-
-		//remove double quotes. 
+ 
 		filepath.erase(remove(filepath.begin(), filepath.end(), '\"'), filepath.end());
 		std::ifstream classFile(filepath);
 		std::string line;

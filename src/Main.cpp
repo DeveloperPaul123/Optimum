@@ -62,18 +62,23 @@ int main(int argc, const char* argv[]) {
 	cout << "BLI: " << endl;
 	cout << bli << endl; cout << endl;
 
-	MatrixXd rotation = OptimalPointMatcher::solveForOptimalRotation(bli, cbct);
-	MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(bli, cbct, rotation);
+	Optimum::PointMatcherSettings pSet;
+	//perform scaling.
+	pSet.doScale = true;
+	Optimum::PointMatcher *matcher = new Optimum::PointMatcher(pSet);
+	Optimum::Transform transform = matcher->solve(bli, cbct);
 
 	cout << "Rotation: " << endl;
-	cout << rotation << endl; cout << endl;
+	cout << transform.rotation << endl; cout << endl;
 	cout << "Translation: " << endl;
-	cout << trans << endl; cout << endl;
+	cout << transform.translation << endl; cout << endl;
+	cout << "Scale: " << endl;
+	cout << transform.scale << endl << endl;
 
-	MatrixXd bliNew = OptimalPointMatcher::applyTransformation(bli, (trans*-1.0), rotation);
+	MatrixXd bliNew = PointMatcher::applyTransformation(bli, transform.translation, transform.rotation);
 	cout << "Transformed:" << endl;
 	cout << bliNew << endl; cout << endl;
-	double rmse = OptimalPointMatcher::RMSE(bliNew, cbct);
+	double rmse = PointMatcher::RMSE(bliNew, cbct);
 	cout << "Error: " << rmse << endl;
 	cin.get();
 
@@ -95,8 +100,8 @@ int main(int argc, const char* argv[]) {
 	cout << "Translation: " << endl;
 	cout << t << endl; cout << endl;
 
-	MatrixXd bNew = OptimalPointMatcher::applyTransformation(bli, (t * -1.0), r);
-	double rootErr = OptimalPointMatcher::RMSE(bNew, cbct);
+	MatrixXd bNew = PointMatcher::applyTransformation(bli, (t * -1.0), r);
+	double rootErr = PointMatcher::RMSE(bNew, cbct);
 	cout << "Error: " << rootErr << endl;
 	cout << "Press any key to continue." << endl;
 	cin.get();
@@ -426,10 +431,10 @@ float f(Vector &vec, MatrixXd &cbct, MatrixXd &bli) {
 	trans_rot << cos((deg * degreeToRad)), -sin((deg * degreeToRad)), 
 	sin((deg*degreeToRad)), cos((deg*degreeToRad));
 	
-	MatrixXd trans = OptimalPointMatcher::applyTransformation(bli, shift, trans_rot);
+	MatrixXd trans = PointMatcher::applyTransformation(bli, shift, trans_rot);
 	//MatrixXd trans = (bli + shift);
 
-	return OptimalPointMatcher::RMSE(trans, cbct);
+	return PointMatcher::RMSE(trans, cbct);
 }
 
 /**
@@ -450,10 +455,10 @@ float f(Chromosome<float> c, MatrixXd &cbct, MatrixXd &bli) {
 		sin((deg*degreeToRad)), cos((deg*degreeToRad));
 
 
-	MatrixXd trans = OptimalPointMatcher::applyTransformation(bli, shift, trans_rot);
+	MatrixXd trans = PointMatcher::applyTransformation(bli, shift, trans_rot);
 	//MatrixXd trans = (bli + shift);
 
-	return OptimalPointMatcher::RMSE(trans, cbct);
+	return PointMatcher::RMSE(trans, cbct);
 }
 
 /**
