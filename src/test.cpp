@@ -47,6 +47,7 @@ protected:
 	void TearDown() {
 
 	}
+
 };
 
 TEST_F(NelderMeadTest, testPowerFunction) {
