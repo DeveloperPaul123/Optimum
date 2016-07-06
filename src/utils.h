@@ -16,7 +16,7 @@ namespace Optimum {
 	* Loads data from a csv file.
 	* @param filepath the absolute filepath to the csv file.
 	* @param delimiter the delimiter of the csv file, typically a comma.
-	* @return MatrixXd and Eigen matrix of unknown dimension.
+	* @return MatrixXd an Eigen matrix of unknown dimension.
 	*/
 	static MatrixXd loadCsv(std::string filepath, char delimiter) {
  

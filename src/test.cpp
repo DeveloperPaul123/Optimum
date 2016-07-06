@@ -54,7 +54,7 @@ TEST_F(NelderMeadTest, testPowerFunction) {
 	float precision = 0.01;
 	int dimension = 1;
 	nmm = new Optimum::NelderMeadMinimizer(dimension, precision);
-	Optimum::Vector v(5.0f);
+	Optimum::Vector v(10.0f);
 	nmm->initialGuess(v);
 	while (!nmm->done()) {
 		double x = v[0];
@@ -63,21 +63,6 @@ TEST_F(NelderMeadTest, testPowerFunction) {
 	}
 	double best = v.at(0);
 	EXPECT_NEAR(3.00, best, 0.1);
-}
-
-TEST_F(NelderMeadTest, testLinearFunction) {
-	float precision = 0.01;
-	int dimension = 1;
-	nmm = new Optimum::NelderMeadMinimizer(dimension, precision);
-	Optimum::Vector v(2.0f);
-	nmm->initialGuess(v);
-	while (!nmm->done()) {
-		double x = v[0];
-		float score = 2 * x + 5;
-		v = nmm->step(v, score);
-	}
-	double best = v.at(0);
-	EXPECT_NEAR(-2.5, best, 0.1);
 }
 
 TEST_F(ICPTester, testTransform) {
@@ -143,11 +128,13 @@ TEST_F(ICPTester, testTransform) {
 		B(r, 0) = correctedX;
 		B(r, 1) = correctedY;
 	}
-
-	Eigen::MatrixXd rot = Optimum::OptimalPointMatcher::solveForOptimalRotation(B, A);
-	Eigen::MatrixXd trans = Optimum::OptimalPointMatcher::solveForOptimalTranslation(B, A, rot);
-	Eigen::MatrixXd transformed = Optimum::OptimalPointMatcher::applyTransformation(B, trans, rot);
-	double error = Optimum::OptimalPointMatcher::RMSE(transformed, A);
+	Optimum::PointMatcherSettings settings;
+	Optimum::PointMatcher matcher(settings);
+	Optimum::Transform t = matcher.solve(B, A);
+	Eigen::MatrixXd rot = t.rotation;
+	Eigen::MatrixXd trans = t.translation;
+	Eigen::MatrixXd transformed = matcher.applyTransformation(B, trans, rot);
+	double error = matcher.RMSE(transformed, A);
 	EXPECT_NEAR(4.0, error, 1.0);
 }
 
