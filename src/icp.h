@@ -237,6 +237,8 @@ namespace Optimum {
 			if (mSettings.doScale) {
 				rotation *= f_inv_scale;
 			}
+			//centroid one is the target centroid
+			//centroid two is the ref centroid
 			Eigen::MatrixXd translation = centroidTwo - (rotation * centroidOne);
 			transform.rotation = rotation;
 			transform.translation = translation;
@@ -369,9 +371,7 @@ namespace Optimum {
 		Eigen::MatrixXd mRef;
 		Eigen::MatrixXd mTarget;
 		Eigen::MatrixXd curRef;
-		Eigen::MatrixXd solvedTransform, solvedRotation;
-		Eigen::MatrixXd transform, lastTransform;
-		Eigen::MatrixXd rotation, lastRotation;
+		Eigen::MatrixXd pose;
 		std::vector<Point> refPoints;
 		std::vector<Point> tarPoints;
 		std::vector<Point> closestPoints;
@@ -398,17 +398,19 @@ namespace Optimum {
 
 		void solve() {
 
-			rotation = Eigen::MatrixXd::Identity(mRef.cols(), mRef.cols());
-			transform = Eigen::MatrixXd::Zero(mRef.cols(), 1);
+			Eigen::MatrixXd rotation = Eigen::MatrixXd::Identity(mRef.cols(), mRef.cols());
+			Eigen::MatrixXd transform = Eigen::MatrixXd::Zero(1, mRef.cols());
+			
+			//pose is a dim+1 x dim matrix (so for 3D it's 4x3) that holds the rotation
+			//and the translation. 
+			pose = Eigen::MatrixXd(rotation.rows() + transform.rows(), rotation.rows());
+			pose << rotation, transform;
 
 			while (iterations > 0) {
 
 				closestPoints.clear();
 				tarPoints.clear();
 				refPoints.clear();
-
-				lastTransform = transform;
-				lastRotation = rotation;
 
 				Eigen::MatrixXd closest = match();
 
@@ -417,15 +419,19 @@ namespace Optimum {
 				Eigen::MatrixXd newRot = t.rotation;
 				Eigen::MatrixXd newTrans = t.translation;
 
-				double lastAngle = rotMatrixToDegrees(lastRotation);
-				double angle = rotMatrixToDegrees(newRot);
-				double newAngle = lastAngle + angle;
+				Eigen::MatrixXd newPose(newRot.rows() + newTrans.transpose().rows(), newRot.rows());
+				newPose << newRot, newTrans.transpose();
 
-				rotation = angleToRotMatrix(newAngle, lastRotation.rows());
+				Eigen::MatrixXd lastPose = pose;
 
-				transform = newTrans + lastTransform;
+				//update our pose.
+				pose = lastPose.cwiseProduct(newPose);
+
+				Eigen::MatrixXd applyTrans = pose.row(pose.cols());
+				Eigen::MatrixXd applyRotation = pose.block(0, 0, pose.cols(), pose.cols());
+
 				//update the target. 
-				Eigen::MatrixXd newRef = PointMatcher::applyTransformation(curRef, transform, rotation);
+				Eigen::MatrixXd newRef = PointMatcher::applyTransformation(curRef, applyTrans, applyRotation);
 				double error = PointMatcher::RMSE(mTarget, newRef);
 
 				//check for termination.
@@ -440,11 +446,11 @@ namespace Optimum {
 		}
 
 		Eigen::MatrixXd getBestTranslation() {
-			return transform;
+			return pose.row(pose.cols());
 		}
 
 		Eigen::MatrixXd getBestRotation() {
-			return rotation;
+			return pose.block(0, 0, pose.cols(),pose.cols());
 		}
 
 	private:
