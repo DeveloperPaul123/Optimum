@@ -357,15 +357,14 @@ namespace Optimum {
 	* Structure used to setup parameters for the ICP algorithm.
 	*/
 	struct ICPSettings{
-		PointType pointType;
-		int maxIterations;
+		PointType pointType = PointType::TWO_D;
+		int maxIterations = 1000;
 	};
 
 	/**
 	* Iterative closest point algorithm.
 	*/
 	class ICP {
-
 		Eigen::MatrixXd mRef;
 		Eigen::MatrixXd mTarget;
 		Eigen::MatrixXd curRef;
