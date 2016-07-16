@@ -57,6 +57,10 @@ namespace Optimum {
 	* @para data the data to write.
 	*/
 	static void writeCsv(std::string filePath, char delimeter, MatrixXd data) {
+		std::string delim;
+		std::stringstream ss;
+		ss << delimeter;
+		ss >> delim;
 		std::string findString(".csv");
 		std::size_t found = filePath.find(findString);
 		if (found == std::string::npos) {
@@ -72,7 +76,7 @@ namespace Optimum {
 				double d = data(r, c);
 				s << d;
 				if (c < cols - 1){
-					s << delimeter;
+					s << delim;
 				}
 			}
 			outFile << s.str() << std::endl;
