@@ -65,6 +65,25 @@ TEST_F(NelderMeadTest, testPowerFunction) {
 	EXPECT_NEAR(3.00, best, 0.1);
 }
 
+TEST_F(ICPTester, testDistances)
+{
+	Eigen::MatrixXd f(2, 2);
+	f(0, 0) = 2.0;
+	f(0, 1) = 4.0;
+	f(1, 0) = 4.0;
+	f(1, 1) = 2.0;
+
+	Eigen::MatrixXd s(2, 2);
+	s(0, 0) = 1.0;
+	s(0, 1) = 5.0;
+	s(1, 0) = 6.0;
+	s(1, 1) = 1.0;
+
+	auto dist = Optimum::PointMatcher::calculateDistances(f, s);
+	EXPECT_EQ(dist.size(),s.rows());
+	EXPECT_NEAR(dist[0], 1.414, 0.2);
+}
+
 TEST_F(ICPTester, testTransform) {
 	double arrA[21][3] = {
 		{ -16.6728, 25.9217, 1.9945 },

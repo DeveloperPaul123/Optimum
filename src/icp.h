@@ -247,6 +247,40 @@ namespace Optimum {
 		}
 
 		/**
+		* @brief Calculates the distances between two sets of coordiantes.
+		* @detail It is assumed that the points are a matched set. That is the point in row 1 matches up (or is comparable
+		* to) the point in row one of second.
+		* @param first the first set of coordinates.
+		* @param second the second set of coordiantes.
+		* @return the distances between the coordinates in a column vector with the same number of rows as first and second.
+		*	This function will return an empty matrix if the sizes of the inputs do not match.
+		*/
+		static std::vector<double> calculateDistances(Eigen::MatrixXd first, Eigen::MatrixXd second)
+		{
+			if (first.size() != second.size()) {
+				std::cout << "Error, matrix size mismatch." << std::endl;
+				return std::vector < double>();
+			}
+			else {
+				//Create the resulting array.
+				std::vector<double> result;
+				for (auto r = 0; r < first.rows(); r++)
+				{
+					auto sqSum = 0.0;
+					for (auto c = 0; c < first.cols(); c++)
+					{
+						auto f = first(r, c);
+						auto s = second(r, c);
+						sqSum += std::pow((s - f), 2.0);
+					}
+
+					result.push_back(std::sqrt(sqSum));
+				}
+				return result;
+			}
+		}
+
+		/**
 		* Calculates the root mean square error between two matricies.
 		* @param dataOne the first matrix in the comparison.
 		* @param dataTwo the second matrix in the comparison.
