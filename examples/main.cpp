@@ -1,11 +1,11 @@
-#include "neldermead.h"
+#include "optimum/neldermead.h"
 #include <Eigen/Dense>
 #include <iostream>
 #include <math.h>
 #include <algorithm>
-#include "geneticalgorithm.h"
-#include "utils.h"
-#include "icp.h"
+#include "optimum/geneticalgorithm.h"
+#include "optimum/utils.h"
+#include "optimum/icp.h"
 
 using namespace std;
 using namespace Eigen;

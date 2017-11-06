@@ -3,9 +3,9 @@
 #include <algorithm>
 #include "gtest/gtest.h"
 
-#include "neldermead.h"
-#include "icp.h"
 #include <Eigen\Dense>
+#include "optimum/neldermead.h"
+#include "optimum/icp.h"
 
 /**
 * Test fixture for NelderMead

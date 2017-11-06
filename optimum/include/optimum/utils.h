@@ -1,15 +1,12 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <iostream>
 #include <string>
 #include <sstream>
 #include <vector>
 #include <fstream>
 #include <Eigen\Dense>
 #include <Eigen\Core>
-
-using namespace Eigen;
 
 namespace Optimum {
 	/**
@@ -18,7 +15,7 @@ namespace Optimum {
 	* @param delimiter the delimiter of the csv file, typically a comma.
 	* @return MatrixXd an Eigen matrix of unknown dimension.
 	*/
-	static MatrixXd loadCsv(std::string filepath, char delimiter) {
+	static Eigen::MatrixXd loadCsv(std::string filepath, char delimiter) {
  
 		filepath.erase(remove(filepath.begin(), filepath.end(), '\"'), filepath.end());
 		std::ifstream classFile(filepath);
@@ -40,7 +37,7 @@ namespace Optimum {
 		}
 		//std::cout << "Reading data: " << rows << " rows, " << cols << " columns." << std::endl;
 		//set the data. 
-		MatrixXd data(rows, cols);
+		Eigen::MatrixXd data(rows, cols);
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols; c++) {
 				data(r, c) = stod(values[r][c]);
@@ -56,7 +53,7 @@ namespace Optimum {
 	* @param delimeter the delimeter for it.
 	* @para data the data to write.
 	*/
-	static void writeCsv(std::string filePath, char delimeter, MatrixXd data) {
+	static void writeCsv(std::string filePath, char delimeter, Eigen::MatrixXd data) {
 		std::string delim;
 		std::stringstream ss;
 		ss << delimeter;
