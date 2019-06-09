@@ -4,6 +4,9 @@
 #include <iostream>
 #include <algorithm>
 #include <math.h>
+
+#include <vector>
+
 #include <Eigen\Dense>
 #include <Eigen\Jacobi>
 #include <Eigen\Geometry>

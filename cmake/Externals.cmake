@@ -1,7 +1,3 @@
-#### Muri Glo Project #####
-# Copyright Xstrahl Inc.
-# Author: Paul Tsouchlos
-
 include(ExternalProject)
 
 set(EXTERNAL_DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/external/)
