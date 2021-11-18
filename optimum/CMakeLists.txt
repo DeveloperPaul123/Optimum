@@ -29,6 +29,7 @@ set(project_headers
     include/optimum/utils.h
     
     include/optimum/evolutionary/genetic.h
+    include/optimum/evolutionary/termination.h
 )
 
 add_library(${PROJECT_NAME} INTERFACE)
