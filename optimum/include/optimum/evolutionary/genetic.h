@@ -39,6 +39,15 @@ namespace dp {
         constexpr U operator()(T&& t) { return std::accumulate(t.begin(), t.end(), {}); }
     };
 
+    namespace ga {
+        /// @brief Settings type for probabilities
+        struct algorithm_settings {
+            double elitism = 0.0;
+            double mutation_rate = 0.5;
+            double crossover_rate = 0.2;
+        };
+    }  // namespace ga
+
     template <class ChromosomeType>
     class genetic_algorithm {
       public:
@@ -51,13 +60,6 @@ namespace dp {
             double fitness{};
         };
 
-        /// @brief Settings type for probabilities
-        struct algorithm_settings {
-            double elitism = 0.0;
-            double mutation_rate = 0.5;
-            double crossover_rate = 0.2;
-        };
-
         template <class FitnessOperator, class MutationOperator, class CrossoverOperator,
                   class TerminationOperator>
         requires detail::mutation_operator<MutationOperator, ChromosomeType> &&
@@ -67,7 +69,7 @@ namespace dp {
                               CrossoverOperator&& crossover_operator,
                               FitnessOperator&& fitness_operator,
                               TerminationOperator&& termination_operator,
-                              algorithm_settings settings = algorithm_settings{})
+                              ga::algorithm_settings settings = ga::algorithm_settings{})
             : mutator_(std::forward<MutationOperator>(mutator)),
               crossover_(std::forward<CrossoverOperator>(crossover_operator)),
               fitness_(std::forward<FitnessOperator>(fitness_operator)),
@@ -98,7 +100,7 @@ namespace dp {
                 // cross over
                 std::size_t crossover_number =
                     (std::size_t)std::round(population_.size() * settings_.crossover_rate);
-                if (crossover_number == 0) crossover_number = 1;
+                if (crossover_number == 0) crossover_number = 2;
 
                 population crossover_population;
                 crossover_population.reserve(crossover_number * 2);
@@ -161,13 +163,14 @@ namespace dp {
         fitness_evaluator fitness_;
         termination_critereon termination_;
 
-        algorithm_settings settings_{};
+        ga::algorithm_settings settings_{};
         std::random_device device_;
         std::mt19937 generator_;
 
         population elitism(population& current_population, std::size_t number_elitism) {
             // perform elitism selection
 
+            // sort so that largest fitness item is at front
             std::ranges::sort(current_population,
                               [](chromosome_metadata first, chromosome_metadata second) {
                                   return first.fitness > second.fitness;

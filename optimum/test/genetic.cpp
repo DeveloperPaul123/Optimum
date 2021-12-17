@@ -1,17 +1,24 @@
 #include "optimum/evolutionary/genetic.h"
-#include "optimum/evolutionary/termination.h"
 
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <random>
 #include <string>
+
+#include "optimum/evolutionary/selection.h"
+#include "optimum/evolutionary/termination.h"
 
 struct random_word_generator {
     random_word_generator() : generator_(device_()) {}
     [[nodiscard]] std::string operator()(std::string_view char_set, std::size_t max_length) {
-        std::string out;
-        std::ranges::sample(char_set, std::back_inserter(out), max_length, generator_);
+        std::string out(max_length, '\0');
+        std::generate_n(out.begin(), max_length, [&]() {
+            std::uniform_int_distribution dist{{}, char_set.size()-1};
+
+            return char_set[dist(generator_)];
+        });
         return out;
     }
 
@@ -19,6 +26,16 @@ struct random_word_generator {
     std::random_device device_;
     std::mt19937 generator_;
 };
+
+std::string get_half_string(std::string str) {
+    auto mid_point = str.size() / 2;
+    return str.substr(0, mid_point);
+}
+
+std::string get_second_half_string(std::string str) {
+    auto mid_point = str.size() / 2;
+    return str.substr(mid_point + 1);
+}
 
 TEST(GeneticAlgorithm, HelloWorld) {
     const std::string solution = "hello world";
@@ -35,9 +52,12 @@ TEST(GeneticAlgorithm, HelloWorld) {
 
     auto fitness_op = [solution, available_chars](std::string value) -> double {
         double score = 0.0;
-        for (auto i = 0; i < solution.size(); i++) {
+        const auto length = std::min(value.size(), solution.size());
+        for (auto i = 0; i < length; i++) {
             score += solution[i] == value[i];
         }
+        long diff = solution.size() - value.size();
+        if (solution.size() != value.size()) score -= std::abs(diff) * 2;
         return score;
     };
 
@@ -56,24 +76,44 @@ TEST(GeneticAlgorithm, HelloWorld) {
         return return_string;
     };
 
-    auto cross_over = [](std::string first, std::string second) {
-        // assume that string sizes are the same.
-        assert(first.size() == second.size());
-        std::string::size_type str_size = first.size();
-        auto is_odd = str_size % 2 == 1;
-        std::string::size_type half_size = str_size / 2;
-
-        std::string first_half = first.substr(0, half_size);
-        std::string second_half = second.substr(second.size() - half_size - 1);
+    auto cross_over = [&engine](std::string first, std::string second) {
+        std::string first_half = get_half_string(first);
+        std::string second_half = get_second_half_string(second);
         return first_half + second_half;
     };
 
     auto termination =
         dp::ga::termination::fitness_termination_criteria<std::string>(fitness_op(solution));
-    dp::genetic_algorithm<std::string>::algorithm_settings settings{0.40, 0.5, 0.2};
-    dp::genetic_algorithm<std::string> ga(initial_population, string_mutator, cross_over,
-                                          fitness_op, termination, settings);
+    dp::ga::algorithm_settings settings{0.1, 0.5, 0.25};
+    dp::genetic_algorithm<std::string> genetics(initial_population, string_mutator, cross_over,
+                                                fitness_op, termination, settings);
 
-    auto results = ga.solve();
+    auto results = genetics.solve();
     EXPECT_EQ(results.best, solution);
+}
+
+TEST(GeneticSelection, RouletteSelection) {
+    const std::string test_value = "test";
+    const std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    const std::string available_chars = alphabet + " ";
+
+    const auto word_length = test_value.size();
+    random_word_generator word_generator{};
+    // generate initial population
+    constexpr auto initial_pop_size = 1000;
+    std::vector<std::string> initial_population(initial_pop_size);
+    std::generate_n(initial_population.begin(), initial_pop_size,
+                    [&]() { return word_generator(available_chars, word_length); });
+
+    auto fitness_op = [test_value, available_chars](std::string value) -> double {
+        double score = 0.0;
+        for (auto i = 0; i < test_value.size(); i++) {
+            score += test_value[i] == value[i];
+        }
+        return score;
+    };
+
+    dp::ga::selection::roulette_selection selection{};
+    const auto& [parent1, parent2] = selection(initial_population, fitness_op);
+    EXPECT_NE(parent1, parent2);
 }
