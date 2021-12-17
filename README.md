@@ -1,77 +1,126 @@
-# Optimum
-A small, lightweight library with various optimization algorithms including the Nelder-Mead algorithm. 
+<p align="center">
+  
+<img src="https://socialify.git.ci/DeveloperPaul123/Optimum/image?description=1&descriptionEditable=A%20small%20optimization%20library%20using%20modern%20C%2B%2B&font=Raleway&forks=1&language=1&pattern=Signal&stargazers=1&theme=Dark" alt="optimum" width="640" height="320" />
+  
+  <br>
+  <br>
 
-## What's in it? ##
+ <a href="https://www.apache.org/licenses/LICENSE-2.0.html">
+    <img src="https://img.shields.io/badge/license-Apache 2.0-blue" alt="License Apache 2.0">
+  </a>
+  
+  <a href="https://github.com/DeveloperPaul123/Optimum/stargazers">
+    <img src="https://img.shields.io/badge/Say%20Thanks-👍-1EAEDB.svg" alt="Say thanks">
+  </a>
+  
+  <a href="https://discord.gg/MyGjmfQTFP">
+    <img alt="Discord" src="https://img.shields.io/discord/652515194572111872">
+  </a>
 
-* **Nelder-Mead Optimization Algorithm:** This algorithm is an optimization algorithm that uses a simplex to converge on a 'best' point. It takes n+1 points for an n-dimensional problem and creates a simplex that is then expanded, contracted, reflected and so on to move towards the minimum. This isn't very robust currently so it will get stuck in local minima. 
+</p>
 
-* **Genetic Algorithm** (Work in progress): This algorithm is optimization algorithm that introduces random mutations and cross overs (like nature and genetics) to make it more likely to find the true global minimum of some cost function. This is good to use when you know very little about the function you are minimizing or if it has a lot of local minima. 
+`Optimum` is an accessible, optimization algorithms library written in C++.
+
+## What's in it?
+
+* **Nelder-Mead Optimization Algorithm:** This algorithm is an optimization algorithm that uses a simplex to converge on a 'best' point. It takes n+1 points for an n-dimensional problem and creates a simplex that is then expanded, contracted, reflected and so on to move towards the minima.
+
+* **Genetic Algorithm**: This algorithm is optimization algorithm that introduces random mutations and cross overs (like nature and genetics) to make it more likely to find the true global minima or maxima of a given cost function. This is good to use when you know very little about the cost function or if there are a lot of local minima or maxima.
 
 * **Kabsch Algorithm:** This algorithm provides a way to find the optimal translation and rotation for the mapping of two point clouds to each other. In order to use this you need to know the mapping of your point pairs beforehand. 
 
-* **Iterative Closest Point** (Work in progress): This algorithm provides a means to perform registration between two clouds of points in either 2D or 3D. This can be used when little is know about the mapping between the two point clouds, or if there is no matching points. 
+* **Iterative Closest Point** (:construction: Work in progress :construction:): This algorithm provides a means to perform registration between two clouds of points in either 2D or 3D. This can be used when little is know about the mapping between the two point clouds, or if there is no matching points. 
 
-## Why? ##
-I made this library because these types of algorithms (for optimization/minimization) are typically only the topic of advanced research papers. I wanted to make this library as a spin-off of a github repository I found [online](https://github.com/blinry/nelder-mead-optimizer). I wanted to improve it and add to it, yet keep it easy to use and incorporate into any c++ project. Future support may include other languages if this does well. 
+## Why?
 
-#### Usage ####
+I made this library because these types of algorithms are typically only the topic of advanced research papers. I wanted to make a simple, small library that makes some of these algorithms not only accessible to all, but also easy to use. 
 
-* **Note:** All classes are under the `Optimum` namespace. This is to avoid conflicts with classes from other namespaces like std or open cv (which I use frequently). 
+## Usage
 
-* Nelder-Mead Optimizer
+All classes are in the `dp` namespace. I make judicious use of namespaces but they may be omitted for brevity in any of the following examples.
 
-````cpp
-float precision = 0.0001;
-int dimension = 2;
-NelderMeadOptimizer o(dimension, precision);
+### Nelder-Mead Optimizer
 
-// request a simplex to start with
-Vector v(0.5, 0.5);
-o.initialGuess(v);
+:construction:
 
-while (!o.done()) {
-    v = o.step(v, f(v));
-}
-````
+### Genetic Algorithm
 
-* Genetic Algorithm
+:construction:
 
-````cpp
-float initialGuess[] = { 3.0f };
-	Chromosome<float> chrome(initialGuess, 1);
+At its core, a genetic algorithm proceeds with the following steps:
 
-	GeneticAlgorithm<float> ga(150, 300, 0.1f, 0.40f);
-	Population<float> mPop = ga.generatePopulation(chrome);
-	for (int i = 0; i < mPop.size(); i++) {
-		Chromosome<float> member = mPop.getMember(i);
-		//ga1DTest() returns the float values of a parabola with its vertex at (3, 5)
-		member.setFitness(ga1DTest(member));
-		mPop.setMember(i, member);
-	}
+* Selection
+* Crossover
+* Mutation
+* Fitness evaluation
 
-	//genetic algorithm test. 
-	Chromosome<float> best = mPop.getMember(0);
-	while (!ga.done()) {
-		mPop.set(ga.step(mPop));
-		for (int i = 0; i < mPop.size(); i++) {
-			Chromosome<float> member = mPop.getMember(i);
-			member.setFitness(ga1DTest(member));
-			mPop.setMember(i, member);
-		}
-		mPop.bubbleSort();
-		if (mPop.getMember(0).getFitness() < best.getFitness()) {
-			best = mPop.getMember(0);
-			cout << "Fitness: " << mPop.getMember(0).getFitness() << " Value: " << mPop.getMember(0).at(0) << endl;
-		}
-	}
-	mPop.bubbleSort();
-	best = mPop.getMember(0);
-	//true min is x = 3. 
-	cout << "Best: " << best.at(0) << " Score: " << best.getFitness() << endl;
-	cout << "Error: " << abs(best.at(0) - 3.0f) / 3.0f << endl;
-````
+These steps repeat until a suitable solution, based on given termination criteria, is found. `dp::genetic_algorithm` is designed to be flexible and support any type of problem. As such, you will need to supply operators that perform the basic steps of the algorithm. For this usage example, we will use the algorithm to find the string `hello world`. We will start with selection criterea. The default selection model is [rank selection](). [Roulette selection]() is also available.
 
-* Kabsch Algorithm
+Next we need a way to evaluate the fitness of each string.
+
+```cpp
+auto fitness_op = [solution, available_chars](std::string value) -> double {
+    double score = 0.0;
+    for (auto i = 0; i < solution.size(); i++) {
+        score += solution[i] == value[i];
+    }
+    return score;
+};
+```
+
+This fitness function compares each character of the input string to the corresponding character of the solution. The boolean result for each comparison is then summed to give a final fitness score. With this, we see that the max score possible is the length of the solution string.
+
+Next we need to create a crossover operator. This will be the operator that generates new "children".
+
+```cpp
+auto cross_over = [](std::string first, std::string second) {
+    // assume that string sizes are the same.
+    assert(first.size() == second.size());
+    std::string::size_type str_size = first.size();
+    auto is_odd = str_size % 2 == 1;
+    std::string::size_type half_size = str_size / 2;
+
+    std::string first_half = first.substr(0, half_size);
+    std::string second_half = second.substr(second.size() - half_size - 1);
+    return first_half + second_half;
+};
+```
+
+This operator simply takes have of one string (i.e. parent) and half of the other and concatenates them together to form a new string. Note that we create a new string that is the same size as the two parent strings.
+
+Finally, we need a mutation operator. This operator will randomly mutate a string to introduce genetic variance in our population.
+
+```cpp
+auto string_mutator = [available_chars, &engine](std::string value) -> std::string {
+    std::uniform_int_distribution<> distribution(0, value.size() - 1);
+    auto random_index = distribution(engine);
+    auto return_string = value;
+    // now get random character
+    std::uniform_int_distribution<> char_dist(0, available_chars.size() - 1);
+    auto random_char_index = char_dist(engine);
+
+    return_string[random_index] = available_chars[random_char_index];
+    return return_string;
+};
+```
+
+This operator simple replaces a character in the string with a random one from the list of used characters.
+
+With these operators defined, we can now set up the `dp::genetic_algorithm` and solve for the solution.
+
+```cpp
+auto termination =
+    dp::ga::termination::fitness_termination_criteria<std::string>(fitness_op(solution));
+dp::ga::algorithm_settings settings{0.40, 0.5, 0.2};
+dp::genetic_algorithm<std::string> genetics(initial_population, string_mutator, cross_over,
+                                        fitness_op, termination, settings);
+auto results = genetics.solve();
+// solution is inside results object
+```
+
+Note that we define our termination criterea here so that when the target fitness is reached, then the algorithm stops. This works well here because there is only one max to our fitness evaluation and there is only one true solution.
+
+### Kabsch Algorithm
 
 ````cpp
     //pseudocode, load your data points. Could be a CSV file. 
@@ -79,20 +128,21 @@ float initialGuess[] = { 3.0f };
     MatrixXd B = getBData();
     //create rotation to map B to A.
     MatrixXd rotation = OptimalPointMatcher::solveForOptimalRotation(A, B);
-	MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(A, B, rotation);
-	//multiply trans by -1 here for corection of coordinate system direction. 
-	MatrixXd B_trans = OptimalPointMatcher::applyTransformation(B,(trans * -1.0), rotation);
-	//calculate root mean squre error between new and reference points. 
-	double rmse = OptimalPointMatcher::RMSE(B_trans, A);
+    MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(A, B, rotation);
+    //multiply trans by -1 here for corection of coordinate system direction. 
+    MatrixXd B_trans = OptimalPointMatcher::applyTransformation(B,(trans * -1.0), rotation);
+    //calculate root mean squre error between new and reference points. 
+    double rmse = OptimalPointMatcher::RMSE(B_trans, A);
 ````
 
-#### Contributing ####
--------
-If you would like to contribute, feel free to fork this repository and create a pull request. This project is configured with Cmake 3.3 or higher and depends on [Eigen] (https://bitbucket.org/eigen/eigen/) which is a header only, linear algebra C++ library. 
+## Contributing
 
-#### License ####
--------
-Copyright 2016 Paul T
+Contributions as welcome! See the [contribution guidelines](CONTRIBUTING.md) for information on how to do so.
+
+## License
+
+```
+Copyright 2015-2021 Paul T
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -105,5 +155,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+```
 
-Copyright (C) 2015  Paul T <developer.paul.123@gmail.com>
+See [LICENSE](LICENSE) for more details.
