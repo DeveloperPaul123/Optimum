@@ -3,3 +3,5 @@ documentation/
 src/icp.h~RF2a8deb57.TMP
 src/lib/
 build - Shortcut.lnk
+*.user
+.vs/
