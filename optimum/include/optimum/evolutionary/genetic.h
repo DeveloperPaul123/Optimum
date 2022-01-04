@@ -81,6 +81,7 @@ namespace dp {
                                    [this](ChromosomeType value) {
                                        return chromosome_metadata{value, fitness_(value)};
                                    });
+            std::ranges::sort(population_);
         }
 
         [[nodiscard]] results solve() {
@@ -109,9 +110,7 @@ namespace dp {
 
                 population crossover_population;
                 crossover_population.reserve(crossover_number * 2);
-
-                population parents(2);
-
+                
                 for (std::size_t i = 0; i < crossover_number; i++) {
                     // randomly select 2 parents
                     const auto& [parent1, parent2] = selector(
@@ -138,6 +137,9 @@ namespace dp {
                                    elite_population.end());
                 population_.insert(population_.end(), crossover_population.begin(),
                                    crossover_population.end());
+
+                // keep the population sorted
+                std::ranges::sort(population_);
 
                 // update the best element
                 best_element = std::ranges::max_element(

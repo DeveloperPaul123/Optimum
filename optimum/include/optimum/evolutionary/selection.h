@@ -5,12 +5,13 @@
 #include <random>
 #include <ranges>
 #include <utility>
+
 namespace dp::ga::selection {
     struct roulette_selection {
-        roulette_selection() : generator_(device_()) {}
+        roulette_selection() : generator_(device_()), distribution_(0.0, 1.0) {}
 
         template <typename Container, typename UnaryOperator,
-                  typename T = typename Container::value_type,
+                  typename T = std::ranges::range_value_t<Container>,
                   typename FitnessResult = std::invoke_result_t<UnaryOperator, T>>
         std::pair<T, T> operator()(const Container& population, UnaryOperator fitness_op) {
             // generate sum
@@ -19,55 +20,59 @@ namespace dp::ga::selection {
                                 [&](FitnessResult current_sum, const T& value) {
                                     return current_sum + fitness_op(value);
                                 });
+
+            auto first_value = distribution_(generator_);
+            auto second_value = distribution_(generator_);
+
+            auto threshold1 = first_value * sum;
+            auto threshold2 = second_value * sum;
+
+            std::pair<T, T> return_pair{};
+
+            auto first_found = false;
+            auto second_found = false;
+
+            FitnessResult accumulator{};
+            for (const auto& value : population) {
+                accumulator += fitness_op(value);
+                if (accumulator >= threshold1 && !first_found) {
+                    return_pair.first = value;
+                    first_found = true;
+                }
+                if (accumulator >= threshold2 && !second_found) {
+                    return_pair.second = value;
+                    second_found = true;
+                }
+                if (first_found && second_found) break;
+            }
+
             // pick 2 parents and return them
-            return std::make_pair(pick_one(population, fitness_op, sum),
-                                  pick_one(population, fitness_op, sum));
+            return return_pair;
         }
 
       private:
         std::random_device device_;
         std::mt19937 generator_;
-        template <typename Container, typename UnaryOperator,
-                  typename T = typename Container::value_type,
-                  typename FitnessResult = std::invoke_result_t<UnaryOperator, T>>
-        T pick_one(const Container& population, UnaryOperator fitness_op, FitnessResult sum) {
-            const std::uniform_real_distribution dis(0.0, 1.0);
-            auto random_value = dis(generator_);
-
-            auto threshold = random_value * sum;
-            FitnessResult accumulator{};
-            for (auto& value : population) {
-                accumulator += fitness_op(value);
-                if (accumulator >= threshold) {
-                    return value;
-                }
-            }
-            return population.at(0);
-        }
+        std::uniform_real_distribution<double> distribution_;
     };
 
     struct rank_selection {
         template <typename Container, typename UnaryOperator,
-                  typename T = typename Container::value_type,
+                  typename T = std::ranges::range_value_t<Container>,
                   typename FitnessResult = std::invoke_result_t<UnaryOperator, T>>
         std::pair<T, T> operator()(const Container& population, UnaryOperator fitness_op) {
-            // TODO: Avoid this copy if possible
-            Container copy{};
-            copy.reserve(population.size());
-            std::copy(population.begin(), population.end(), std::back_inserter(copy));
-            // sort by fitness, highest to lowest
-            std::sort(copy.begin(), copy.end(), [&](const T& first, const T& second) {
-                return fitness_op(first) < fitness_op(second);
-            });
+            // assume population is sorted already
+            std::ranges::reverse_view reverse_view(population);
 
             // fitness evaluator/operator
             auto rank_fitness_op = [&](const T& value) -> FitnessResult {
-                auto location = std::find(copy.begin(), copy.end(), value);
-                return static_cast<FitnessResult>(std::distance(copy.begin(), location) + 1.0);
+                auto location = std::find(reverse_view.begin(), reverse_view.end(), value);
+                return static_cast<FitnessResult>(std::distance(reverse_view.begin(), location) +
+                                                  1.0);
             };
 
             // use roulette selection
-            return selection_(copy, rank_fitness_op);
+            return selection_(reverse_view, rank_fitness_op);
         }
 
       private:
