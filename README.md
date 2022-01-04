@@ -21,6 +21,8 @@
 
 `Optimum` is an accessible, optimization algorithms library written in C++.
 
+:warning: *The api is currently under heavy development and is subject to change.* :warning:
+
 ## What's in it?
 
 * **Nelder-Mead Optimization Algorithm:** This algorithm is an optimization algorithm that uses a simplex to converge on a 'best' point. It takes n+1 points for an n-dimensional problem and creates a simplex that is then expanded, contracted, reflected and so on to move towards the minima.
@@ -45,8 +47,6 @@ All classes are in the `dp` namespace. I make judicious use of namespaces but th
 
 ### Genetic Algorithm
 
-:construction:
-
 At its core, a genetic algorithm proceeds with the following steps:
 
 * Selection
@@ -54,7 +54,7 @@ At its core, a genetic algorithm proceeds with the following steps:
 * Mutation
 * Fitness evaluation
 
-These steps repeat until a suitable solution, based on given termination criteria, is found. `dp::genetic_algorithm` is designed to be flexible and support any type of problem. As such, you will need to supply operators that perform the basic steps of the algorithm. For this usage example, we will use the algorithm to find the string `hello world`. We will start with selection criterea. The default selection model is [rank selection](). [Roulette selection]() is also available.
+These steps repeat until a suitable solution, based on given termination criteria, is found. `dp::genetic_algorithm` is designed to be flexible and support any type of problem. As such, you will need to supply operators that perform the basic steps of the algorithm. For this usage example, we will use the algorithm to find the string `hello world`. We will start with selection criterea. The default selection model is [rank selection](https://en.wikipedia.org/wiki/Selection_(genetic_algorithm)). [Roulette selection](https://en.wikipedia.org/wiki/Fitness_proportionate_selection) is also available.
 
 Next we need a way to evaluate the fitness of each string.
 
@@ -122,18 +122,7 @@ Note that we define our termination criterea here so that when the target fitnes
 
 ### Kabsch Algorithm
 
-````cpp
-    //pseudocode, load your data points. Could be a CSV file. 
-    MatrixXd A = getAData();
-    MatrixXd B = getBData();
-    //create rotation to map B to A.
-    MatrixXd rotation = OptimalPointMatcher::solveForOptimalRotation(A, B);
-    MatrixXd trans = OptimalPointMatcher::solveForOptimalTranslation(A, B, rotation);
-    //multiply trans by -1 here for corection of coordinate system direction. 
-    MatrixXd B_trans = OptimalPointMatcher::applyTransformation(B,(trans * -1.0), rotation);
-    //calculate root mean squre error between new and reference points. 
-    double rmse = OptimalPointMatcher::RMSE(B_trans, A);
-````
+:construction:
 
 ## Contributing
 
@@ -141,7 +130,7 @@ Contributions as welcome! See the [contribution guidelines](CONTRIBUTING.md) for
 
 ## License
 
-```
+```txt
 Copyright 2015-2021 Paul T
 
 Licensed under the Apache License, Version 2.0 (the "License");
