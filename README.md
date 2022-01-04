@@ -25,13 +25,13 @@
 
 ## What's in it?
 
-* **Nelder-Mead Optimization Algorithm:** This algorithm is an optimization algorithm that uses a simplex to converge on a 'best' point. It takes n+1 points for an n-dimensional problem and creates a simplex that is then expanded, contracted, reflected and so on to move towards the minima.
+* 🚧 **Nelder-Mead Optimization Algorithm:** This algorithm is an optimization algorithm that uses a simplex to converge on a 'best' point. It takes n+1 points for an n-dimensional problem and creates a simplex that is then expanded, contracted, reflected and so on to move towards the minima.
 
-* **Genetic Algorithm**: This algorithm is optimization algorithm that introduces random mutations and cross overs (like nature and genetics) to make it more likely to find the true global minima or maxima of a given cost function. This is good to use when you know very little about the cost function or if there are a lot of local minima or maxima.
+* ✅ **Genetic Algorithm**: This algorithm is optimization algorithm that introduces random mutations and cross overs (like nature and genetics) to make it more likely to find the true global minima or maxima of a given cost function. This is good to use when you know very little about the cost function or if there are a lot of local minima or maxima.
 
-* **Kabsch Algorithm:** This algorithm provides a way to find the optimal translation and rotation for the mapping of two point clouds to each other. In order to use this you need to know the mapping of your point pairs beforehand. 
+* 🚧 **Kabsch Algorithm:** This algorithm provides a way to find the optimal translation and rotation for the mapping of two point clouds to each other. In order to use this you need to know the mapping of your point pairs beforehand. 
 
-* **Iterative Closest Point** (:construction: Work in progress :construction:): This algorithm provides a means to perform registration between two clouds of points in either 2D or 3D. This can be used when little is know about the mapping between the two point clouds, or if there is no matching points. 
+* 🚧 **Iterative Closest Point** (:construction: Work in progress :construction:): This algorithm provides a means to perform registration between two clouds of points in either 2D or 3D. This can be used when little is know about the mapping between the two point clouds, or if there is no matching points. 
 
 ## Why?
 
