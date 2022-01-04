@@ -38,7 +38,7 @@ std::string get_second_half_string(std::string str) {
     return str.substr(mid_point + 1);
 }
 
-TEST(GeneticAlgorithm, HelloWorld) {
+TEST(GeneticAlgorithm, StringSearch) {
     const std::string solution = "hello world from a genetic algorithm";
     const std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
     const std::string available_chars = alphabet + " ,'";

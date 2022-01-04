@@ -54,6 +54,7 @@ namespace dp::ga::selection {
         std::random_device device_;
         std::mt19937 generator_;
         std::uniform_real_distribution<double> distribution_;
+
     };
 
     struct rank_selection {
