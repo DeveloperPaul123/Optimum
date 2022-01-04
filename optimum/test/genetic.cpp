@@ -96,9 +96,8 @@ TEST(GeneticAlgorithm, HelloWorld) {
     auto termination =
         dp::ga::termination::fitness_termination_criteria<std::string>(fitness_op(solution));
     dp::ga::algorithm_settings settings{0.1, 0.5, 0.25};
-    dp::genetic_algorithm<std::string> genetics(settings, initial_population, string_mutator,
+    dp::genetic_algorithm genetics(settings, initial_population, string_mutator,
                                                 cross_over, fitness_op, termination);
-
     auto results = genetics.solve();
     EXPECT_EQ(results.best, solution);
 }
@@ -175,5 +174,5 @@ TEST(GeneticSelection, RankSelection) {
     const auto [min_value, min_count] = *std::ranges::min_element(selection_histogram, comp_op);
 
     EXPECT_EQ(string_value, "tesa");
-    EXPECT_EQ(min_value, "aaa");
+    EXPECT_EQ(min_value, "bbb");
 }
