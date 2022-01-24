@@ -1,13 +1,12 @@
 #pragma once
 
 #include <algorithm>
-#include <compare>
 #include <concepts>
 #include <functional>
 #include <iostream>
 #include <iterator>
 #include <numeric>
-#include <random>
+#include <optional>
 #include <vector>
 
 #include "optimum/evolutionary/selection.h"
@@ -19,10 +18,17 @@ namespace dp {
             std::invocable<Fn, T> && std::is_same_v<std::invoke_result_t<Fn, T>, T>;
 
         template <class Fn, class T, class Result = std::invoke_result_t<Fn, T>>
-        concept fitness_operator = std::invocable<Fn, T> && std::is_convertible_v<Result, double>;
+        concept fitness_operator = std::invocable<Fn, T> &&
+            (std::integral<Result> || std::floating_point<Result>);
 
         template <class Fn, class T, class Result = std::invoke_result_t<Fn, T, T>>
         concept crossover_operator = std::invocable<Fn, T, T> && std::is_same_v<Result, T>;
+
+        template <class Fn, class T, class Numeric,
+                  class Result = std::invoke_result_t<Fn, T, Numeric>>
+        concept termination_operator = std::invocable<Fn, T, Numeric> &&
+            std::is_same_v<Result, bool> &&
+            ((std::integral<Numeric> || std::floating_point<Numeric>));
     }  // namespace detail
 
     template <typename T>
@@ -51,6 +57,7 @@ namespace dp {
     }  // namespace ga
 
     template <class ChromosomeType>
+    requires std::default_initializable<ChromosomeType>
     class genetic_algorithm {
       public:
         using value_type = ChromosomeType;
@@ -62,11 +69,19 @@ namespace dp {
             double fitness{};
         };
 
+        struct iteration_statistics {
+            results current_best;
+            std::size_t current_generation_count{};
+            std::size_t population_size{};
+        };
+
         template <class FitnessOperator, class MutationOperator, class CrossoverOperator,
                   class TerminationOperator>
         requires detail::mutation_operator<MutationOperator, ChromosomeType> &&
             detail::fitness_operator<FitnessOperator, ChromosomeType> &&
-            detail::crossover_operator<CrossoverOperator, ChromosomeType>
+            detail::crossover_operator<CrossoverOperator, ChromosomeType> &&
+            detail::termination_operator<TerminationOperator, ChromosomeType,
+                                         std::invoke_result_t<FitnessOperator, ChromosomeType>>
             genetic_algorithm(ga::algorithm_settings settings, list_type initial_population,
                               MutationOperator&& mutator, CrossoverOperator&& crossover_operator,
                               FitnessOperator&& fitness_operator,
@@ -81,10 +96,14 @@ namespace dp {
                                    [this](ChromosomeType value) {
                                        return chromosome_metadata{value, fitness_(value)};
                                    });
-            std::ranges::sort(population_);
+            // sort by fitness
+            std::ranges::sort(population_, fitness_sort_op{});
         }
 
-        [[nodiscard]] results solve() {
+        template <typename IterationCallback = std::function<void(const iteration_statistics&)>>
+        requires std::invocable<IterationCallback, const iteration_statistics&>
+        [[nodiscard]] results solve(const IterationCallback& callback =
+                                        [](const iteration_statistics&) {}) {
             auto best_element = std::ranges::max_element(
                 population_, [](chromosome_metadata first, chromosome_metadata second) {
                     return first.fitness < second.fitness;
@@ -93,6 +112,9 @@ namespace dp {
             // TODO: Make selector configurable
             // default selector
             dp::ga::selection::rank_selection selector{};
+
+            iteration_statistics stats{};
+            stats.current_best.best = best_element->value;
 
             while (!termination_(best_element->value, best_element->fitness)) {
                 // perform elitism
@@ -108,9 +130,11 @@ namespace dp {
                     std::round(static_cast<double>(population_.size()) * settings_.crossover_rate));
                 if (crossover_number <= 1) crossover_number = 4;
 
+                // create a new "generation", we will also insert the elite population into this
+                // one.
                 population crossover_population;
-                crossover_population.reserve(crossover_number * 2);
-                
+                crossover_population.reserve(crossover_number * 2 + elite_population.size());
+
                 for (std::size_t i = 0; i < crossover_number; i++) {
                     // randomly select 2 parents
                     const auto& [parent1, parent2] = selector(
@@ -130,24 +154,27 @@ namespace dp {
                     crossover_population.push_back({child2, fitness_(child2)});
                 }
 
-                population_.clear();
-                population_.reserve(elite_population.size() + crossover_population.size());
-                // update the full population
-                population_.insert(population_.end(), elite_population.begin(),
-                                   elite_population.end());
-                population_.insert(population_.end(), crossover_population.begin(),
-                                   crossover_population.end());
+                // add elite population
+                crossover_population.insert(crossover_population.end(), elite_population.begin(),
+                                            elite_population.end());
 
-                // keep the population sorted
-                std::ranges::sort(population_);
+                // sort crossover population by fitness (lowest first)
+                std::ranges::sort(crossover_population, fitness_sort_op{});
+
+                // reset the current population
+                population_.clear();
+                // assign/move the new generation
+                population_ = std::move(crossover_population);
 
                 // update the best element
-                best_element = std::ranges::max_element(
-                    population_, [](chromosome_metadata first, chromosome_metadata second) {
-                        return first.fitness < second.fitness;
-                    });
+                best_element = std::ranges::max_element(population_, fitness_sort_op{});
 
-                std::cout << "best: " << best_element->value << "\n";
+                // send callback stats for each generation
+                stats.current_best.best = best_element->value;
+                stats.current_best.fitness = best_element->fitness;
+                stats.population_size = population_.size();
+                ++stats.current_generation_count;
+                callback(std::add_const_t<iteration_statistics>(stats));
             }
 
             return {best_element->value, best_element->fitness};
@@ -161,9 +188,17 @@ namespace dp {
         using termination_criterion = std::function<bool(ChromosomeType, double)>;
 
         struct chromosome_metadata {
-            chromosome value;
+            chromosome value{};
             double fitness{};
             auto operator<=>(const chromosome_metadata&) const = default;
+        };
+
+        template <typename Comparator = std::less<>>
+        struct fitness_sort_op {
+            bool operator()(const chromosome_metadata& first, const chromosome_metadata& second) {
+                Comparator cmp;
+                return cmp(first.fitness, second.fitness);
+            }
         };
 
         using population = std::vector<chromosome_metadata>;
@@ -175,21 +210,17 @@ namespace dp {
 
         ga::algorithm_settings settings_{};
 
-        population elitism(population& current_population, std::size_t number_elitism) {
+        static auto elitism(population& current_population, std::size_t number_elitism) {
             // perform elitism selection
 
             // sort so that largest fitness item is at front
-            std::ranges::sort(current_population,
-                              [](chromosome_metadata first, chromosome_metadata second) {
-                                  return first.fitness > second.fitness;
-                              });
+            std::ranges::partial_sort(current_population,
+                                      current_population.begin() +
+                                          std::min(current_population.size(), number_elitism + 1),
+                                      fitness_sort_op<std::greater<>>{});
 
             // select the first n in the current population
-            population out;
-            out.reserve(number_elitism);
-            std::ranges::copy_n(current_population.begin(), number_elitism,
-                                std::back_inserter(out));
-            return out;
+            return std::ranges::views::take(current_population, number_elitism);
         }
     };
 }  // namespace dp
