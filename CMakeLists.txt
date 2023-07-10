@@ -12,14 +12,19 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 option(OPTIMUM_TESTS "Build all test cases." OFF)
 option(OPTIMUM_EXAMPLES "Build examples." OFF)
 
-include(Dependencies)
+find_package(Eigen3 CONFIG REQUIRED)
+
+if(OPTIMUM_TESTS)
+  enable_testing()
+  find_package(GTest REQUIRED)
+endif()
 
 add_subdirectory(optimum)
 
 if(OPTIMUM_EXAMPLES)
-	add_executable(OptimumExamples examples/main.cpp)
-	target_link_libraries(OptimumExamples Optimum)
-	include_directories(${EIGEN_DIR})
+  add_executable(OptimumExamples examples/main.cpp)
+  target_link_libraries(OptimumExamples Optimum)
+  include_directories(${EIGEN_DIR})
 endif(OPTIMUM_EXAMPLES)
 #Add target to build documents from visual studio.
 set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
@@ -27,9 +32,9 @@ set(DOXYGEN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/docs")
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
-	file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+  file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-	${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
 ADD_CUSTOM_TARGET(DOCUMENTATION
   COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
